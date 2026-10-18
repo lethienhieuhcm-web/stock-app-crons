@@ -1,0 +1,40 @@
+name: StockApp Alert Check
+
+# Moved from VM cron `stockapp-alert-check` (every 10m) on 2026-10-18.
+# Reads price alerts/targets from R2 via the worker internal API and sends
+# Telegram on hit (one-shot). No local DB involved.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prepare secrets
+        run: |
+          mkdir -p "$HOME/workspace/shopee-deal-hunter"
+          printf 'DEALHUNTER_TELEGRAM_BOT_TOKEN=%s\nDEALHUNTER_TELEGRAM_CHAT_ID=%s\n' \
+            "$TG_TOKEN" "$TG_CHAT" > "$HOME/workspace/shopee-deal-hunter/.env"
+          chmod 600 "$HOME/workspace/shopee-deal-hunter/.env"
+          printf '%s' "$PUBLISH_SECRET" > "$HOME/.stockapp_publish"
+          chmod 600 "$HOME/.stockapp_publish"
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PUBLISH_SECRET: ${{ secrets.STOCKAPP_PUBLISH_SECRET }}
+
+      - name: Run alert check
+        run: python3 scripts/check_alerts_r2.py
+        env:
+          VNSTOCK_TELEMETRY: "off"
