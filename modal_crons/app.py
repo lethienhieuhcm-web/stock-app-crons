@@ -1,1 +1,554 @@
-IiIiCk1vZGFsIGNyb24gam9icyBmb3IgUG9ja2V0IFBlcnNvbmFsIChrMSBTZWN0aW9uIDIpLgpUcmlnZ2VyIGRlcGxveTogMjAyNi0xMC0xOSAyMjowNgoKMyBzY2hlZHVsZWQgZnVuY3Rpb25zOgoxLiBib29rX3Byb2Nlc3NvciAgLSBldmVyeSA1IG1pbjogcHJvY2VzcyBQREYgdXBsb2FkcyBmcm9tIFIyIChFbmdsaXNoIExhYiBCb29rcykKMi4gcHVibGlzaF9zbmFwc2hvdCAtIGV2ZXJ5IDMwIG1pbjogcHVibGlzaCBzdG9jayBzbmFwc2hvdHMgdmlhIHZuc3RvY2suCiAgIFBheWxvYWQgRFVORyBjb250cmFjdCBXb3JrZXIgKHsiaW5kaWNlcyI6IFsuLi5dfSAtPiBtYXJrZXQvaW5kaWNlcy5qc29uLAogICB7InF1b3RlcyI6IHtTWU06IHsuLi59fX0gLT4gbWFya2V0L3F1b3Rlcy5qc29uKSAtIDIwMjYtMTAtMTU6IHBoYXQgaGllbgogICBiYW4gY3UgZ3VpIHsidHlwZSIsImRhdGEifSBuZW4gV29ya2VyIHdyaXR0ZW46MCAoa2hvbmcgZ2hpIGdpIGNhKS4KICAgSW5kaWNlcyBsYXkgcXVhIGluZGV4KHN5bWJvbCkub2hsY3Ygbmh1IHNjcmlwdCBWTSAobWFya2V0LmluZGljZXMoKQogICBraG9uZyBjb24gbyB2bnN0b2NrIHYzKS4KICAgRmFpbHVyZSBwb2xpY3kgKG9uZyBsb24gc3R5bGUpOiB0cmFjayBwZXItc3RlcCBzdWNjZXNzOyBpZiBOT1RISU5HIHdhcwogICBwdWJsaXNoZWQgKHRvdGFsIGZhaWx1cmUpIC0+IHNlbmQgVGVsZWdyYW0gYWxlcnQgdmlhIFdvcmtlcgogICAvYXBpL2ludGVybmFsL21vZGFsLWFsZXJ0LCB0aGVuIHJhaXNlIHNvIHRoZSBkYXNoYm9hcmQgc2hvd3MgRmFpbGVkLgogICBQYXJ0aWFsIGZhaWx1cmUgb25seSBsb2dzOyB0aGUgbmV4dCBydW4gcmV0cmllcyBpbiAzMCBtaW4uCjMuIGQxX2JhY2t1cCAgICAgICAgLSBkYWlseTogYmFja3VwIEQxIHRvIE1vZGFsIFZvbHVtZSAoa2VlcCA3IHZlcnNpb25zKQoKU2VjcmV0cyAoTW9kYWwgZGFzaGJvYXJkIC0+IFNlY3JldHMgLT4gInBvY2tldC1wZXJzb25hbCIpOgogIC0gQ0ZfQVBJX1RPS0VOCiAgLSBTVE9DS19QVUJMSVNIX1NFQ1JFVAogIC0gVk5TVE9DS19BUElfS0VZCgpEZXBsb3k6CiAgbW9kYWwgZGVwbG95IGFwcC5weQoKVGVzdCBzaW5nbGUgcnVuOgogIG1vZGFsIHJ1biBhcHAucHk6OmJvb2tfcHJvY2Vzc29yCiAgbW9kYWwgcnVuIGFwcC5weTo6cHVibGlzaF9zbmFwc2hvdAogIG1vZGFsIHJ1biBhcHAucHk6OmQxX2JhY2t1cAoiIiIKaW1wb3J0IG1vZGFsCgojIFBlcnNpc3RlbnQgdm9sdW1lIGZvciBzdGF0ZSAoRDEgYmFja3VwcywgdGVtcCBmaWxlcykKdm9sdW1lID0gbW9kYWwuVm9sdW1lLmZyb21fbmFtZSgicG9ja2V0LXBlcnNvbmFsLXZvbCIsIGNyZWF0ZV9pZl9taXNzaW5nPVRydWUpCgojIEltYWdlIHdpdGggYWxsIGRlcGVuZGVuY2llcwpib29rX2ltYWdlID0gKAogICAgbW9kYWwuSW1hZ2UuZGViaWFuX3NsaW0ocHl0aG9uX3ZlcnNpb249IjMuMTMiKQogICAgLnBpcF9pbnN0YWxsKCJweW11cGRmIiwgInJlcXVlc3RzIikKKQoKc3RvY2tfaW1hZ2UgPSAoCiAgICBtb2RhbC5JbWFnZS5kZWJpYW5fc2xpbShweXRob25fdmVyc2lvbj0iMy4xMyIpCiAgICAucGlwX2luc3RhbGwoInJlcXVlc3RzIikKICAgIC5waXBfaW5zdGFsbCgidm5zdG9jaz49NSw8NiIsIGV4dHJhX2luZGV4X3VybD0iaHR0cHM6Ly92bnN0b2Nrcy5jb20vYXBpL3BhY2thZ2VzIikKICAgIC5hZGRfbG9jYWxfZmlsZSgiL2hvbWUvaGF0Y2gvd29ya3NwYWNlL3N0b2NrLWFwcC9zY3JpcHRzL2RpcmVjdF9mZXRjaC5weSIsICIvb3B0L2RpcmVjdF9mZXRjaC5weSIpCikKCiMgUmVhbHRpbWUgaW1hZ2U6IEtIT05HIGNhbiB2bnN0b2NrLCBjaGkgY2FuIGRpcmVjdF9mZXRjaCAodHUgY2h1IGR1IGxpZXUpCiMgVkNJIHRyYWRpbmcgKyBLQlMgYm9hcmQgbGEgZmVlZCBsaXZlIHRyb25nIHBoaWVuLCBwb2xsaW5nIDYwcwpyZWFsdGltZV9pbWFnZSA9ICgKICAgIG1vZGFsLkltYWdlLmRlYmlhbl9zbGltKHB5dGhvbl92ZXJzaW9uPSIzLjEzIikKICAgIC5waXBfaW5zdGFsbCgicmVxdWVzdHMiKQogICAgLmFkZF9sb2NhbF9maWxlKCIvaG9tZS9oYXRjaC93b3Jrc3BhY2Uvc3RvY2stYXBwL3NjcmlwdHMvZGlyZWN0X2ZldGNoLnB5IiwgIi9vcHQvZGlyZWN0X2ZldGNoLnB5IikKKQoKYXBwID0gbW9kYWwuQXBwKCJwb2NrZXQtcGVyc29uYWwtY3JvbnMiKQoKCkBhcHAuZnVuY3Rpb24oCiAgICBpbWFnZT1ib29rX2ltYWdlLAogICAgc2VjcmV0cz1bbW9kYWwuU2VjcmV0LmZyb21fbmFtZSgicG9ja2V0LXBlcnNvbmFsIildLAogICAgdm9sdW1lcz17Ii9kYXRhIjogdm9sdW1lfSwKICAgIHNjaGVkdWxlPW1vZGFsLkNyb24oIiovNSAqICogKiAqIiksICAjIGV2ZXJ5IDUgbWludXRlcwogICAgdGltZW91dD02MDAsCikKZGVmIGJvb2tfcHJvY2Vzc29yKCk6CiAgICAiIiJQcm9jZXNzIHBlbmRpbmcgUERGIGJvb2sgdXBsb2FkcyBmcm9tIFIyIGV2ZXJ5IDUgbWludXRlcy4iIiIKICAgIGltcG9ydCBqc29uLCByZSwgb3MsIHRlbXBmaWxlLCB1cmxsaWIucmVxdWVzdAogICAgZnJvbSBkYXRldGltZSBpbXBvcnQgZGF0ZXRpbWUKCiAgICBDRl9UT0tFTiA9IG9zLmVudmlyb25bIkNGX0FQSV9UT0tFTiJdCiAgICBBUEkgPSAiaHR0cHM6Ly9hcGkuY2xvdWRmbGFyZS5jb20vY2xpZW50L3Y0IgogICAgQUNDT1VOVCA9ICIyNWIyMzI3ZTkzMmQyNmU1NDg3YzJiYThhZDA1ODkzMiIKICAgIEJVQ0tFVCA9ICJlbmdsaXNoLWxhYi1kYXRhIgoKICAgIGRlZiBhcGlfcmVxKG1ldGhvZCwgcGF0aCwgZGF0YT1Ob25lLCByYXc9RmFsc2UpOgogICAgICAgIHVybCA9IEFQSSArIHBhdGgKICAgICAgICBib2R5ID0ganNvbi5kdW1wcyhkYXRhKS5lbmNvZGUoKSBpZiBkYXRhIGlzIG5vdCBOb25lIGVsc2UgTm9uZQogICAgICAgIHJlcSA9IHVybGxpYi5yZXF1ZXN0LlJlcXVlc3QodXJsLCBkYXRhPWJvZHksIG1ldGhvZD1tZXRob2QpCiAgICAgICAgcmVxLmFkZF9oZWFkZXIoIkF1dGhvcml6YXRpb24iLCBmIkJlYXJlciB7Q0ZfVE9LRU59IikKICAgICAgICBpZiBub3QgcmF3OgogICAgICAgICAgICByZXEuYWRkX2hlYWRlcigiQ29udGVudC1UeXBlIiwgImFwcGxpY2F0aW9uL2pzb24iKQogICAgICAgIHdpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihyZXEsIHRpbWVvdXQ9MTIwKSBhcyByZXNwOgogICAgICAgICAgICBpZiByYXc6CiAgICAgICAgICAgICAgICByZXR1cm4gcmVzcC5yZWFkKCkKICAgICAgICAgICAgcmV0dXJuIGpzb24ubG9hZHMocmVzcC5yZWFkKCkuZGVjb2RlKCkpCgogICAgZGVmIHIyX2Rvd25sb2FkKGtleSk6CiAgICAgICAgcmV0dXJuIGFwaV9yZXEoIkdFVCIsIGYiL2FjY291bnRzL3tBQ0NPVU5UfS9yMi9idWNrZXRzL3tCVUNLRVR9L29iamVjdHMve2tleX0iLCByYXc9VHJ1ZSkKCiAgICBkZWYgcjJfbGlzdChwcmVmaXgpOgogICAgICAgIG91dCA9IGFwaV9yZXEoIkdFVCIsIGYiL2FjY291bnRzL3tBQ0NPVU5UfS9yMi9idWNrZXRzL3tCVUNLRVR9L29iamVjdHM/cHJlZml4PXtwcmVmaXh9IikKICAgICAgICByZXN1bHQgPSBvdXQuZ2V0KCJyZXN1bHQiLCBbXSkKICAgICAgICByZXR1cm4gcmVzdWx0IGlmIGlzaW5zdGFuY2UocmVzdWx0LCBsaXN0KSBlbHNlIHJlc3VsdC5nZXQoIm9iamVjdHMiLCBbXSkKCiAgICBkZWYgcjJfZGVsZXRlKGtleSk6CiAgICAgICAgYXBpX3JlcSgiREVMRVRFIiwgZiIvYWNjb3VudHMve0FDQ09VTlR9L3IyL2J1Y2tldHMve0JVQ0tFVH0vb2JqZWN0cy97a2V5fSIpCgogICAgZGVmIHIyX3B1dChrZXksIG9iaik6CiAgICAgICAgZGF0YSA9IGpzb24uZHVtcHMob2JqKS5lbmNvZGUoKQogICAgICAgIHJlcSA9IHVybGxpYi5yZXF1ZXN0LlJlcXVlc3QoCiAgICAgICAgICAgIGYie0FQSX0vYWNjb3VudHMve0FDQ09VTlR9L3IyL2J1Y2tldHMve0JVQ0tFVH0vb2JqZWN0cy97a2V5fSIsCiAgICAgICAgICAgIGRhdGE9ZGF0YSwgbWV0aG9kPSJQVVQiKQogICAgICAgIHJlcS5hZGRfaGVhZGVyKCJBdXRob3JpemF0aW9uIiwgZiJCZWFyZXIge0NGX1RPS0VOfSIpCiAgICAgICAgcmVxLmFkZF9oZWFkZXIoIkNvbnRlbnQtVHlwZSIsICJhcHBsaWNhdGlvbi9qc29uIikKICAgICAgICB3aXRoIHVybGxpYi5yZXF1ZXN0LnVybG9wZW4ocmVxLCB0aW1lb3V0PTEyMCk6CiAgICAgICAgICAgIHBhc3MKCiAgICAjIEZpbmQgcGVuZGluZyBQREZzCiAgICBwZW5kaW5nID0gcjJfbGlzdCgiYm9va3MvcGVuZGluZy8iKQogICAgaWYgbm90IHBlbmRpbmc6CiAgICAgICAgcHJpbnQoZiJbe2RhdGV0aW1lLm5vdygpLmlzb2Zvcm1hdCgpfV0gYm9va19wcm9jZXNzb3I6IG5vIHBlbmRpbmcgUERGcyIpCiAgICAgICAgcmV0dXJuCgogICAgaW1wb3J0IGZpdHogICMgcHltdXBkZgoKICAgIGZvciBvYmogaW4gcGVuZGluZzoKICAgICAgICBrZXkgPSBvYmpbImtleSJdCiAgICAgICAgcHJpbnQoZiJQcm9jZXNzaW5nIHtrZXl9Li4uIikKICAgICAgICB0cnk6CiAgICAgICAgICAgIHBkZl9ieXRlcyA9IHIyX2Rvd25sb2FkKGtleSkKICAgICAgICAgICAgd2l0aCB0ZW1wZmlsZS5OYW1lZFRlbXBvcmFyeUZpbGUoc3VmZml4PSIucGRmIiwgZGVsZXRlPUZhbHNlKSBhcyB0ZjoKICAgICAgICAgICAgICAgIHRmLndyaXRlKHBkZl9ieXRlcykKICAgICAgICAgICAgICAgIHBkZl9wYXRoID0gdGYubmFtZQoKICAgICAgICAgICAgZG9jID0gZml0ei5vcGVuKHBkZl9wYXRoKQogICAgICAgICAgICBmdWxsX3RleHQgPSAiIgogICAgICAgICAgICBmb3IgcGFnZSBpbiBkb2M6CiAgICAgICAgICAgICAgICBmdWxsX3RleHQgKz0gcGFnZS5nZXRfdGV4dCgpICsgIlxuIgogICAgICAgICAgICBkb2MuY2xvc2UoKQogICAgICAgICAgICBvcy51bmxpbmsocGRmX3BhdGgpCgogICAgICAgICAgICAjIEJhc2ljIGNoYXB0ZXIgZGV0ZWN0aW9uIChsaW5lcyB0aGF0IGxvb2sgbGlrZSBoZWFkaW5ncykKICAgICAgICAgICAgbGluZXMgPSBmdWxsX3RleHQuc3BsaXQoIlxuIikKICAgICAgICAgICAgY2hhcHRlcnMgPSBbXQogICAgICAgICAgICBjdXJyZW50ID0geyJ0aXRsZSI6ICJDaGFwdGVyIDEiLCAidGV4dCI6ICIifQogICAgICAgICAgICBmb3IgbGluZSBpbiBsaW5lczoKICAgICAgICAgICAgICAgIHN0cmlwcGVkID0gbGluZS5zdHJpcCgpCiAgICAgICAgICAgICAgICBpZiByZS5tYXRjaChyIl4oY2hhcHRlcnxjaMawxqFuZylccytcZCsiLCBzdHJpcHBlZCwgcmUuSSkgYW5kIGxlbihzdHJpcHBlZCkgPCA4MDoKICAgICAgICAgICAgICAgICAgICBpZiBjdXJyZW50WyJ0ZXh0Il0uc3RyaXAoKToKICAgICAgICAgICAgICAgICAgICAgICAgY2hhcHRlcnMuYXBwZW5kKGN1cnJlbnQpCiAgICAgICAgICAgICAgICAgICAgY3VycmVudCA9IHsidGl0bGUiOiBzdHJpcHBlZCwgInRleHQiOiAiIn0KICAgICAgICAgICAgICAgIGVsc2U6CiAgICAgICAgICAgICAgICAgICAgY3VycmVudFsidGV4dCJdICs9IGxpbmUgKyAiXG4iCiAgICAgICAgICAgIGlmIGN1cnJlbnRbInRleHQiXS5zdHJpcCgpOgogICAgICAgICAgICAgICAgY2hhcHRlcnMuYXBwZW5kKGN1cnJlbnQpCgogICAgICAgICAgICAjIFNpbXBsZSBDRUZSIGVzdGltYXRpb24gYnkgYXZnIHdvcmQgbGVuZ3RoICsgc2VudGVuY2UgbGVuZ3RoCiAgICAgICAgICAgIHdvcmRzID0gZnVsbF90ZXh0LnNwbGl0KCkKICAgICAgICAgICAgYXZnX3dsID0gc3VtKGxlbih3KSBmb3IgdyBpbiB3b3JkcykgLyBtYXgobGVuKHdvcmRzKSwgMSkgaWYgd29yZHMgZWxzZSAwCiAgICAgICAgICAgIGlmIGF2Z193bCA8IDQuNToKICAgICAgICAgICAgICAgIGNlZnIgPSAiQTEiCiAgICAgICAgICAgIGVsaWYgYXZnX3dsIDwgNS4wOgogICAgICAgICAgICAgICAgY2VmciA9ICJBMiIKICAgICAgICAgICAgZWxpZiBhdmdfd2wgPCA1LjU6CiAgICAgICAgICAgICAgICBjZWZyID0gIkIxIgogICAgICAgICAgICBlbGlmIGF2Z193bCA8IDYuMDoKICAgICAgICAgICAgICAgIGNlZnIgPSAiQjIiCiAgICAgICAgICAgIGVsc2U6CiAgICAgICAgICAgICAgICBjZWZyID0gIkMxIgoKICAgICAgICAgICAgYm9va19pZCA9IG9zLnBhdGguYmFzZW5hbWUoa2V5KS5yZXBsYWNlKCIucGRmIiwgIiIpCiAgICAgICAgICAgIHJlc3VsdCA9IHsKICAgICAgICAgICAgICAgICJib29rX2lkIjogYm9va19pZCwKICAgICAgICAgICAgICAgICJzb3VyY2Vfa2V5Ijoga2V5LAogICAgICAgICAgICAgICAgInByb2Nlc3NlZF9hdCI6IGRhdGV0aW1lLm5vdygpLmlzb2Zvcm1hdCgpLAogICAgICAgICAgICAgICAgImNlZnIiOiBjZWZyLAogICAgICAgICAgICAgICAgIndvcmRfY291bnQiOiBsZW4od29yZHMpLAogICAgICAgICAgICAgICAgImNoYXB0ZXJzIjogWwogICAgICAgICAgICAgICAgICAgIHsidGl0bGUiOiBjWyJ0aXRsZSJdLCAid29yZF9jb3VudCI6IGxlbihjWyJ0ZXh0Il0uc3BsaXQoKSl9CiAgICAgICAgICAgICAgICAgICAgZm9yIGMgaW4gY2hhcHRlcnMKICAgICAgICAgICAgICAgIF0sCiAgICAgICAgICAgICAgICAiZnVsbF90ZXh0X2tleSI6IGYiYm9va3MvdGV4dC97Ym9va19pZH0udHh0IiwKICAgICAgICAgICAgfQoKICAgICAgICAgICAgIyBVcGxvYWQgZXh0cmFjdGVkIHRleHQgYW5kIG1ldGFkYXRhCiAgICAgICAgICAgIHIyX3B1dChmImJvb2tzL3RleHQve2Jvb2tfaWR9LnR4dCIsIHsidGV4dCI6IGZ1bGxfdGV4dH0pCiAgICAgICAgICAgIHIyX3B1dChmImJvb2tzL21ldGEve2Jvb2tfaWR9Lmpzb24iLCByZXN1bHQpCiAgICAgICAgICAgIHIyX2RlbGV0ZShrZXkpICAjIHJlbW92ZSBmcm9tIHBlbmRpbmcKCiAgICAgICAgICAgIHByaW50KGYiICAtPiB7Ym9va19pZH06IHtsZW4od29yZHMpfSB3b3Jkcywge2xlbihjaGFwdGVycyl9IGNoYXB0ZXJzLCBDRUZSIHtjZWZyfSIpCiAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgICAgICBwcmludChmIiAgRVJST1Ige2tleX06IHtlfSIpCgogICAgdm9sdW1lLmNvbW1pdCgpCgoKQGFwcC5mdW5jdGlvbigKICAgIGltYWdlPXN0b2NrX2ltYWdlLAogICAgc2VjcmV0cz1bbW9kYWwuU2VjcmV0LmZyb21fbmFtZSgicG9ja2V0LXBlcnNvbmFsIildLAogICAgdm9sdW1lcz17Ii9kYXRhIjogdm9sdW1lfSwKICAgICMgRElTQUJMRUQgMjAyNi0xMC0xOTogdGhheSBiYW5nIHJlYWx0aW1lX3BvbGxlciAoMSBwaHV0L2xhbiwgdHUgY2h1IFZDSS9LQlMpCiAgICAjIHNjaGVkdWxlPW1vZGFsLkNyb24oIiovMzAgMi03ICogKiAxLTUiLCB0aW1lem9uZT0iVVRDIiksCiAgICB0aW1lb3V0PTEyMDAsCikKZGVmIHB1Ymxpc2hfc25hcHNob3QoKToKICAgICIiIlB1Ymxpc2ggc3RvY2sgc25hcHNob3QgZXZlcnkgMzAgbWluIGR1cmluZyBIT1NFIHRyYWRpbmcgaG91cnMuIiIiCiAgICBpbXBvcnQganNvbiwgbWF0aCwgb3MsIHN5cywgdGltZSwgdXJsbGliLnJlcXVlc3QKICAgIGZyb20gZGF0ZXRpbWUgaW1wb3J0IGRhdGUsIHRpbWVkZWx0YQoKICAgIFBVQkxJU0hfVVJMID0gImh0dHBzOi8vbGV0aGFuaGRvbmcub25lL2FwaS9pbnRlcm5hbC9zdG9jay1wdWJsaXNoIgogICAgQUxFUlRfVVJMID0gImh0dHBzOi8vbGV0aGFuaGRvbmcub25lL2FwaS9pbnRlcm5hbC9tb2RhbC1hbGVydCIKICAgIFNFQ1JFVCA9IG9zLmVudmlyb25bIlNUT0NLX1BVQkxJU0hfU0VDUkVUIl0KICAgIFZOU1RPQ0tfS0VZID0gb3MuZW52aXJvbi5nZXQoIlZOU1RPQ0tfQVBJX0tFWSIpCgogICAgIyB2bnN0b2NrIDUueDogZGFuZyBreSBkZXZpY2UgYmFuZyBrZXkgQ29tbXVuaXR5IChIZW5ycnkgeWV1IGNhdSkuCiAgICAjIEx1dSBhdXRoIHRyZW4gdm9sdW1lIHBlcnNpc3RlbnQgL2RhdGEgZGUga2hvbmcgcmVnaXN0ZXIgbGFpIG1vaSBydW4uCiAgICBpbXBvcnQgc3VicHJvY2VzcwogICAgX3ZuaG9tZSA9ICIvZGF0YS8udm5zdG9jayIKICAgIG9zLm1ha2VkaXJzKF92bmhvbWUsIGV4aXN0X29rPVRydWUpCiAgICBvcy5lbnZpcm9uWyJIT01FIl0gPSAiL2RhdGEiICAjIH4vLnZuc3RvY2sgLT4gL2RhdGEvLnZuc3RvY2sgKHBlcnNpc3RlbnQpCiAgICAjIEtpZW0gdHJhIGRldmljZSBkYSByZWdpc3RlciBUSEFUIGNodWEgKGZpbGUgdG9uIHRhaSBjaHVhIGR1OwogICAgIyBsYW4gdHJ1b2MgcmVnaXN0ZXIgdGhhdCBiYWkgdmFuIGRlIGxhaSBmaWxlIHN0YWxlKQogICAgZGVmIF9kZXZpY2Vfb2soKToKICAgICAgICB0cnk6CiAgICAgICAgICAgIF9zcCA9IHN1YnByb2Nlc3MucnVuKFsidm5zdG9jayIsICJzdGF0dXMiXSwgY2FwdHVyZV9vdXRwdXQ9VHJ1ZSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgdGltZW91dD0zMCwgZW52PXsqKm9zLmVudmlyb24sICJIT01FIjogIi9kYXRhIn0pCiAgICAgICAgICAgIF9vdXQgPSBfc3Auc3Rkb3V0LmRlY29kZSgpICsgX3NwLnN0ZGVyci5kZWNvZGUoKQogICAgICAgICAgICByZXR1cm4gIlRoaeG6v3QgYuG7izoiIGluIF9vdXQgYW5kICJjaMawYSIgbm90IGluIF9vdXQubG93ZXIoKS5zcGxpdCgidGhp4bq/dCBi4buLOiIpWzFdWzo1MF0KICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICByZXR1cm4gRmFsc2UKICAgIGlmIG5vdCBfZGV2aWNlX29rKCkgYW5kIFZOU1RPQ0tfS0VZOgogICAgICAgIHByaW50KCJ2bnN0b2NrOiByZWdpc3RlcmluZyBkZXZpY2Ugd2l0aCBDb21tdW5pdHkga2V5Li4uIiwgZmx1c2g9VHJ1ZSkKICAgICAgICB0cnk6CiAgICAgICAgICAgICMgWG9hIGF1dGggc3RhbGUgdHJ1b2Mga2hpIHJlZ2lzdGVyIGxhaQogICAgICAgICAgICBpbXBvcnQgc2h1dGlsCiAgICAgICAgICAgIHNodXRpbC5ybXRyZWUob3MucGF0aC5qb2luKF92bmhvbWUsICJhdXRoIiksIGlnbm9yZV9lcnJvcnM9VHJ1ZSkKICAgICAgICAgICAgX3JwID0gc3VicHJvY2Vzcy5ydW4oCiAgICAgICAgICAgICAgICBbInZuc3RvY2siLCAicmVnaXN0ZXIiLCAiLS1zdGRpbiJdLAogICAgICAgICAgICAgICAgaW5wdXQ9Vk5TVE9DS19LRVkuZW5jb2RlKCksIGNhcHR1cmVfb3V0cHV0PVRydWUsIHRpbWVvdXQ9OTAsCiAgICAgICAgICAgICAgICBlbnY9eyoqb3MuZW52aXJvbiwgIkhPTUUiOiAiL2RhdGEifSwKICAgICAgICAgICAgKQogICAgICAgICAgICBwcmludCgidm5zdG9jayByZWdpc3RlcjogIiArIF9ycC5zdGRvdXQuZGVjb2RlKClbOjMwMF0sIGZsdXNoPVRydWUpCiAgICAgICAgICAgIGlmIF9ycC5yZXR1cm5jb2RlICE9IDA6CiAgICAgICAgICAgICAgICBwcmludCgidm5zdG9jayByZWdpc3RlciBGQUlMRUQ6ICIgKyBfcnAuc3RkZXJyLmRlY29kZSgpWzozMDBdLCBmbHVzaD1UcnVlKQogICAgICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgX3JlOgogICAgICAgICAgICBwcmludChmInZuc3RvY2sgcmVnaXN0ZXIgZXJyb3I6IHtfcmV9IiwgZmx1c2g9VHJ1ZSkKCiAgICBmcm9tIHZuc3RvY2sgaW1wb3J0IE1hcmtldAogICAgaW1wb3J0IHZuc3RvY2sgYXMgX3ZubW9kICAjIGRvYyB2ZXJzaW9uIHJ1bnRpbWUgZGUgZ2FuIHZhbyBfcHJvdgoKICAgIGRlZiB2bl9jYWxsKGZuLCBsYWJlbCwgcmV0cmllcz0zKToKICAgICAgICBmb3IgYXR0ZW1wdCBpbiByYW5nZShyZXRyaWVzKToKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgcmV0dXJuIGZuKCkKICAgICAgICAgICAgZXhjZXB0IFN5c3RlbUV4aXQ6CiAgICAgICAgICAgICAgICBwcmludChmIlt7bGFiZWx9XSByYXRlIGxpbWl0LCBzbGVlcCA3MHMgKHRyeSB7YXR0ZW1wdCsxfSkiLCBmbHVzaD1UcnVlKQogICAgICAgICAgICAgICAgdGltZS5zbGVlcCg3MCkKICAgICAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgICAgICAgICAgcHJpbnQoZiJbe2xhYmVsfV0gZXJyb3I6IHtlfSAodHJ5IHthdHRlbXB0KzF9KSIsIGZsdXNoPVRydWUpCiAgICAgICAgICAgICAgICB0aW1lLnNsZWVwKDUpCiAgICAgICAgcHJpbnQoZiJbe2xhYmVsfV0gc2tpcHBlZCBhZnRlciB7cmV0cmllc30gdHJpZXMiLCBmbHVzaD1UcnVlKQogICAgICAgIHJldHVybiBOb25lCgogICAgZGVmIHB1Ymxpc2gocGF5bG9hZCk6CiAgICAgICAgZGF0YSA9IGpzb24uZHVtcHMocGF5bG9hZCkuZW5jb2RlKCkKICAgICAgICByZXEgPSB1cmxsaWIucmVxdWVzdC5SZXF1ZXN0KFBVQkxJU0hfVVJMLCBkYXRhPWRhdGEsIG1ldGhvZD0iUE9TVCIpCiAgICAgICAgcmVxLmFkZF9oZWFkZXIoIkNvbnRlbnQtVHlwZSIsICJhcHBsaWNhdGlvbi9qc29uIikKICAgICAgICByZXEuYWRkX2hlYWRlcigiWC1QdWJsaXNoLVNlY3JldCIsIFNFQ1JFVCkKICAgICAgICByZXEuYWRkX2hlYWRlcigiWC1JbnRlcm5hbC1TZWNyZXQiLCBTRUNSRVQpCiAgICAgICAgcmVxLmFkZF9oZWFkZXIoIlVzZXItQWdlbnQiLCAiTW96aWxsYS81LjAgKGNvbXBhdGlibGU7IFBvY2tldFBlcnNvbmFsLzEuMCkiKQogICAgICAgIHdpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihyZXEsIHRpbWVvdXQ9NjApIGFzIHJlc3A6CiAgICAgICAgICAgIHJldHVybiBqc29uLmxvYWRzKHJlc3AucmVhZCgpLmRlY29kZSgpKQoKICAgIGRlZiBfcHJvdihzb3VyY2UpOgogICAgICAgICIiIlByb3ZlbmFuY2UgKGhvYyB0dSB2bnN0b2NrIDUpOiBnYW4gdmVyc2lvbiB2bnN0b2NrIFRIQVQgZGFuZyBjaGF5CiAgICAgICAgdHJvbmcgaW1hZ2UsIGRlIGJpZXQgZHUgbGlldSB0dSBzdG9jazQgaGF5IHN0b2NrNS4iIiIKICAgICAgICBmcm9tIGRhdGV0aW1lIGltcG9ydCBkYXRldGltZSwgdGltZXpvbmUKICAgICAgICB2ZXIgPSAiPyIKICAgICAgICB0cnk6CiAgICAgICAgICAgIGZyb20gaW1wb3J0bGliLm1ldGFkYXRhIGltcG9ydCB2ZXJzaW9uIGFzIF9wa2dfdmVyc2lvbgogICAgICAgICAgICB2ZXIgPSBfcGtnX3ZlcnNpb24oInZuc3RvY2siKQogICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgIHZlciA9IGdldGF0dHIoX3ZubW9kLCAiX192ZXJzaW9uX18iLCAiPyIpCiAgICAgICAgcmV0dXJuIHsic291cmNlIjogZiJ7c291cmNlfS97dmVyfSIsCiAgICAgICAgICAgICAgICAicmV0cmlldmVkX2F0IjogZGF0ZXRpbWUubm93KHRpbWV6b25lLnV0YykuaXNvZm9ybWF0KCl9CgogICAgZGVmIHNlbmRfZmFpbF9hbGVydChkZXRhaWwpOgogICAgICAgICIiIkJhbyBIZW5ycnkgcXVhIFRlbGVncmFtIGtoaSBydW4gdGhhdCBiYWkgaG9hbiB0b2FuIChraWV1IG9uZyBsb246CiAgICAgICAgYWxlcnQgb24gbWVhbmluZ2Z1bCBmYWlsdXJlLCB0cmFuaCBhbGVydCBmYXRpZ3VlIGtoaSBjaGkgbG9pIDEgcGhhbikuIiIiCiAgICAgICAgZnJvbSBkYXRldGltZSBpbXBvcnQgZGF0ZXRpbWUsIHRpbWV6b25lCiAgICAgICAgdHJ5OgogICAgICAgICAgICBkYXRhID0ganNvbi5kdW1wcyh7CiAgICAgICAgICAgICAgICAiYXBwIjogInBvY2tldC1wZXJzb25hbC1jcm9ucyIsCiAgICAgICAgICAgICAgICAiZm4iOiAicHVibGlzaF9zbmFwc2hvdCIsCiAgICAgICAgICAgICAgICAidGltZSI6IGRhdGV0aW1lLm5vdyh0aW1lem9uZS51dGMpLmlzb2Zvcm1hdCgpLAogICAgICAgICAgICAgICAgImRldGFpbCI6IGRldGFpbCwKICAgICAgICAgICAgfSkuZW5jb2RlKCkKICAgICAgICAgICAgcmVxID0gdXJsbGliLnJlcXVlc3QuUmVxdWVzdChBTEVSVF9VUkwsIGRhdGE9ZGF0YSwgbWV0aG9kPSJQT1NUIikKICAgICAgICAgICAgcmVxLmFkZF9oZWFkZXIoIkNvbnRlbnQtVHlwZSIsICJhcHBsaWNhdGlvbi9qc29uIikKICAgICAgICAgICAgcmVxLmFkZF9oZWFkZXIoIlgtUHVibGlzaC1TZWNyZXQiLCBTRUNSRVQpCiAgICAgICAgICAgIHJlcS5hZGRfaGVhZGVyKCJYLUludGVybmFsLVNlY3JldCIsIFNFQ1JFVCkKICAgICAgICAgICAgcmVxLmFkZF9oZWFkZXIoIlVzZXItQWdlbnQiLCAiTW96aWxsYS81LjAgKGNvbXBhdGlibGU7IFBvY2tldFBlcnNvbmFsLzEuMCkiKQogICAgICAgICAgICB3aXRoIHVybGxpYi5yZXF1ZXN0LnVybG9wZW4ocmVxLCB0aW1lb3V0PTMwKSBhcyByZXNwOgogICAgICAgICAgICAgICAgcHJpbnQoZiIgIGZhaWwgYWxlcnQgc2VudDogSFRUUCB7cmVzcC5zdGF0dXN9IiwgZmx1c2g9VHJ1ZSkKICAgICAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGU6CiAgICAgICAgICAgIHByaW50KGYiICBmYWlsIGFsZXJ0IGVycm9yOiB7ZX0iLCBmbHVzaD1UcnVlKQoKICAgIGRlZiBjbGVhbl9udW0odik6CiAgICAgICAgIiIiU28gc2FjaDogTm9uZS9OYU4vaW5mIC0+IE5vbmUgKHRyYW5oIGxvaSBzZXJpYWxpemUgbmh1IHNjcmlwdCBWTSkuIiIiCiAgICAgICAgaWYgdiBpcyBOb25lOgogICAgICAgICAgICByZXR1cm4gTm9uZQogICAgICAgIHRyeToKICAgICAgICAgICAgZiA9IGZsb2F0KHYpCiAgICAgICAgZXhjZXB0IChUeXBlRXJyb3IsIFZhbHVlRXJyb3IpOgogICAgICAgICAgICByZXR1cm4gTm9uZQogICAgICAgIHJldHVybiBOb25lIGlmIG1hdGguaXNuYW4oZikgb3IgbWF0aC5pc2luZihmKSBlbHNlIGYKCiAgICBkZWYgY2xlYW5fcmVjKHIpOgogICAgICAgIHJldHVybiB7azogKE5vbmUgaWYgaXNpbnN0YW5jZSh2LCBmbG9hdCkgYW5kIChtYXRoLmlzbmFuKHYpIG9yIG1hdGguaXNpbmYodikpIGVsc2UgdikKICAgICAgICAgICAgICAgIGZvciBrLCB2IGluIHIuaXRlbXMoKX0KCiAgICBwcmludChmIlt7ZGF0ZS50b2RheSgpLmlzb2Zvcm1hdCgpfV0gcHVibGlzaF9zbmFwc2hvdCBzdGFydGluZy4uLiIpCiAgICBtYXJrZXQgPSBNYXJrZXQoKQogICAgb2tfaW5kaWNlcyA9IEZhbHNlCiAgICBva19xdW90ZXMgPSBGYWxzZQoKICAgICMgSW5kaWNlczogcGF0dGVybiBuaHUgc2NyaXB0IFZNIChkdW5nIG9obGN2IHR1bmcgaW5kZXgsIGxheSAyIGJhciBjdW9pCiAgICAjIGRlIHRpbmggY2hhbmdlL3BjdF9jaGFuZ2UpLiBtYXJrZXQuaW5kaWNlcygpIGtob25nIGNvbiB0b24gdGFpIG8gdm5zdG9jayB2My4KICAgIHRyeToKICAgICAgICBlbmQgPSBkYXRlLnRvZGF5KCkuaXNvZm9ybWF0KCkKICAgICAgICBzdGFydCA9IChkYXRlLnRvZGF5KCkgLSB0aW1lZGVsdGEoZGF5cz0xMCkpLmlzb2Zvcm1hdCgpCiAgICAgICAgaWR4X3Jvd3MgPSBbXQogICAgICAgIGZvciBzeW0gaW4gWyJWTklOREVYIiwgIlZOMzAiLCAiSE5YSW5kZXgiLCAiVVBDT01JbmRleCJdOgogICAgICAgICAgICByZWNzID0gdm5fY2FsbCgKICAgICAgICAgICAgICAgIGxhbWJkYSBzPXN5bTogW2NsZWFuX3JlYyhyKSBmb3IgciBpbgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbWFya2V0LmluZGV4KHN5bWJvbD1zKS5vaGxjdihzdGFydD1zdGFydCwgZW5kPWVuZCkudG9fZGljdCgicmVjb3JkcyIpXSwKICAgICAgICAgICAgICAgIGYiaW5kaWNlcy17c3ltfSIsIHJldHJpZXM9MikKICAgICAgICAgICAgaXRlbSA9IHsic3ltYm9sIjogc3ltfQogICAgICAgICAgICBpZiByZWNzOgogICAgICAgICAgICAgICAgbGFzdCA9IHJlY3NbLTFdCiAgICAgICAgICAgICAgICBpdGVtWyJjbG9zZSJdID0gY2xlYW5fbnVtKGxhc3QuZ2V0KCJjbG9zZSIpKQogICAgICAgICAgICAgICAgaXRlbVsidm9sdW1lIl0gPSBjbGVhbl9udW0obGFzdC5nZXQoInZvbHVtZSIpKQogICAgICAgICAgICAgICAgdCA9IGxhc3QuZ2V0KCJ0aW1lIikKICAgICAgICAgICAgICAgICMgNS54OiB0aW1lIGxhIHBhbmRhcyBUaW1lc3RhbXAgLT4gbGF5IGRhdGU7IDQueDogc3RyIC0+IGNhdCAxMCBreSB0dQogICAgICAgICAgICAgICAgaXRlbVsidGltZSJdID0gdFs6MTBdIGlmIGlzaW5zdGFuY2UodCwgc3RyKSBlbHNlIHN0cih0KVs6MTBdCiAgICAgICAgICAgICAgICBpZiBsZW4ocmVjcykgPj0gMjoKICAgICAgICAgICAgICAgICAgICBwcmV2LCBjdXIgPSBjbGVhbl9udW0ocmVjc1stMl0uZ2V0KCJjbG9zZSIpKSwgaXRlbVsiY2xvc2UiXQogICAgICAgICAgICAgICAgICAgIGlmIHByZXYgYW5kIGN1cjoKICAgICAgICAgICAgICAgICAgICAgICAgaXRlbVsiY2hhbmdlIl0gPSByb3VuZChjdXIgLSBwcmV2LCAyKQogICAgICAgICAgICAgICAgICAgICAgICBpdGVtWyJwY3RfY2hhbmdlIl0gPSByb3VuZCgoY3VyIC0gcHJldikgLyBwcmV2ICogMTAwLCAyKQogICAgICAgICAgICBpZHhfcm93cy5hcHBlbmQoaXRlbSkKICAgICAgICAgICAgdGltZS5zbGVlcCgyKSAgIyByZXNwZWN0IHJhdGUgbGltaXQKICAgICAgICBpZiBpZHhfcm93czoKICAgICAgICAgICAgIyBDb250cmFjdCBXb3JrZXI6IHsiaW5kaWNlcyI6IFsuLi5dfSAtPiBtYXJrZXQvaW5kaWNlcy5qc29uIHtyb3dzOiBbLi4uXX0KICAgICAgICAgICAgcmVzdWx0ID0gcHVibGlzaCh7ImluZGljZXMiOiBpZHhfcm93cywgIl9wcm92IjogX3Byb3YoInZuc3RvY2siKX0pCiAgICAgICAgICAgIHByaW50KGYiICBpbmRpY2VzOiB7bGVuKGlkeF9yb3dzKX0gLT4ge3Jlc3VsdH0iKQogICAgICAgICAgICBva19pbmRpY2VzID0gVHJ1ZQogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgIHByaW50KGYiICBpbmRpY2VzIHB1Ymxpc2ggZXJyb3I6IHtlfSIpCgogICAgIyBRdW90ZXM6IG1hcCBmaWVsZCB0aGF0IGN1YSB2bnN0b2NrIHNhbmcgZHVuZyBjb250cmFjdCBmcm9udGVuZAogICAgIyB7Y2xvc2UsIGNoYW5nZSwgcGN0X2NoYW5nZSwgdm9sdW1lLCB2YWx1ZV92bmQsIGV4Y2hhbmdlfSB0aGVvIG1hIENLLgogICAgIyB2bnN0b2NrIDUueDogZHVuZyBwcmljZV9ib2FyZCAoMSBjYWxsIGNobyAyMCBtYSkgdGhheSB2aSAyMHggcXVvdGUoKS4KICAgICMgNS54IGtob25nIGNvIHNhbiBwcmljZV9jaGFuZ2UvcGVyY2VudF9jaGFuZ2Uvdm9sdW1lX2FjY3VtdWxhdGVkL3RvdGFsX3ZhbHVlCiAgICAjIC0+IGNoYW5nZS9wY3RfY2hhbmdlIHR1IHRpbmggdHUgcmVmZXJlbmNlX3ByaWNlOyB2b2x1bWUvdmFsdWVfdm5kID0gTm9uZQogICAgIyAoZnJvbnRlbmQga2hvbmcgZHVuZyAyIGZpZWxkIG5heSB0dSBxdW90ZXM7IEFJIGNvbnRleHQgY28gZmFsbGJhY2sgIuKAlCIpLgogICAgc3ltYm9scyA9IFsiVkNCIiwgIkJJRCIsICJDVEciLCAiVENCIiwgIk1CQiIsICJWUEIiLCAiSFBHIiwgIlZITSIsICJWSUMiLCAiVk5NIiwKICAgICAgICAgICAgICAgIk1TTiIsICJGUFQiLCAiTVdHIiwgIlNTSSIsICJWTkQiLCAiSENNIiwgIlNUQiIsICJBQ0IiLCAiU0hCIiwgIlBPVyJdCiAgICBieV9zeW1ib2wgPSB7fQogICAgYm9hcmRfcmVjcyA9IHZuX2NhbGwobGFtYmRhOiBtYXJrZXQucHJpY2VfYm9hcmQoc3ltYm9scykudG9fZGljdCgicmVjb3JkcyIpLAogICAgICAgICAgICAgICAgICAgICAgICAgInF1b3RlLWJvYXJkIiwgcmV0cmllcz0yKQogICAgaWYgYm9hcmRfcmVjczoKICAgICAgICBmb3IgciBpbiBib2FyZF9yZWNzOgogICAgICAgICAgICBzeW0gPSByLmdldCgic3ltYm9sIikKICAgICAgICAgICAgY2xvc2UgPSBjbGVhbl9udW0oci5nZXQoImNsb3NlX3ByaWNlIikpCiAgICAgICAgICAgIHJlZiA9IGNsZWFuX251bShyLmdldCgicmVmZXJlbmNlX3ByaWNlIikpCiAgICAgICAgICAgIGNoZyA9IHJvdW5kKGNsb3NlIC0gcmVmLCAyKSBpZiAoY2xvc2UgaXMgbm90IE5vbmUgYW5kIHJlZikgZWxzZSBOb25lCiAgICAgICAgICAgIHBjdCA9IHJvdW5kKGNoZyAvIHJlZiAqIDEwMCwgMikgaWYgKGNoZyBpcyBub3QgTm9uZSBhbmQgcmVmKSBlbHNlIE5vbmUKICAgICAgICAgICAgYnlfc3ltYm9sW3N5bV0gPSB7CiAgICAgICAgICAgICAgICAiY2xvc2UiOiBjbG9zZSwKICAgICAgICAgICAgICAgICJjaGFuZ2UiOiBjaGcsCiAgICAgICAgICAgICAgICAicGN0X2NoYW5nZSI6IHBjdCwKICAgICAgICAgICAgICAgICJ2b2x1bWUiOiBOb25lLAogICAgICAgICAgICAgICAgInZhbHVlX3ZuZCI6IE5vbmUsCiAgICAgICAgICAgICAgICAiZXhjaGFuZ2UiOiByLmdldCgiZXhjaGFuZ2UiKSwKICAgICAgICAgICAgfQoKICAgIGlmIGJ5X3N5bWJvbDoKICAgICAgICB0cnk6CiAgICAgICAgICAgICMgQ29udHJhY3QgV29ya2VyOiB7InF1b3RlcyI6IHtTWU06IHsuLi59fX0gLT4gbWFya2V0L3F1b3Rlcy5qc29uIHtieV9zeW1ib2w6IHsuLi59fQogICAgICAgICAgICByZXN1bHQgPSBwdWJsaXNoKHsicXVvdGVzIjogYnlfc3ltYm9sLCAiX3Byb3YiOiBfcHJvdigidm5zdG9jayIpfSkKICAgICAgICAgICAgcHJpbnQoZiIgIHF1b3Rlczoge2xlbihieV9zeW1ib2wpfSBzeW1ib2xzIC0+IHtyZXN1bHR9IikKICAgICAgICAgICAgb2tfcXVvdGVzID0gVHJ1ZQogICAgICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICAgICAgICAgcHJpbnQoZiIgIHF1b3RlcyBwdWJsaXNoIGVycm9yOiB7ZX0iKQoKICAgICMgVGhhdCBiYWkgaG9hbiB0b2FuIChraG9uZyBwdWJsaXNoIGR1b2MgZ2kpIC0+IGFsZXJ0ICsgcmFpc2UgZGUKICAgICMgZGFzaGJvYXJkIE1vZGFsIGhpZW4gRmFpbGVkLiBMb2kgMSBwaGFuIHRoaSBjaGkgbG9nLCBydW4gc2F1IHR1IHJldHJ5LgogICAgaWYgbm90IG9rX2luZGljZXMgYW5kIG5vdCBva19xdW90ZXM6CiAgICAgICAgZGV0YWlsID0gImluZGljZXM6IEZBSUxFRCwgcXVvdGVzOiBGQUlMRUQiCiAgICAgICAgc2VuZF9mYWlsX2FsZXJ0KGRldGFpbCkKICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoZiJwdWJsaXNoX3NuYXBzaG90IGZhaWxlZDoge2RldGFpbH0iKQoKICAgIHByaW50KCJwdWJsaXNoX3NuYXBzaG90IGRvbmUuIikKICAgIHZvbHVtZS5jb21taXQoKQoKCkBhcHAuZnVuY3Rpb24oCiAgICBpbWFnZT1yZWFsdGltZV9pbWFnZSwKICAgIHNlY3JldHM9W21vZGFsLlNlY3JldC5mcm9tX25hbWUoInBvY2tldC1wZXJzb25hbCIpXSwKICAgIHNjaGVkdWxlPW1vZGFsLkNyb24oIiogMi03ICogKiAxLTUiLCB0aW1lem9uZT0iVVRDIiksICAjIGV2ZXJ5IDEgbWluLCAwOTowMC0xNDo1OSArMDcsIE1vbi1GcmkKICAgIHRpbWVvdXQ9MTIwLAopCmRlZiByZWFsdGltZV9wb2xsZXIoKToKICAgICIiIlJlYWx0aW1lIHBvbGxlcjogbGF5IGdpYSBsaXZlIHR1IFZDSS9LQlMgKHR1IGNodSwga2hvbmcgcXVhIHZuc3RvY2spLCBwdWJsaXNoIGxlbiBSMiBtb2kgNjBzLgoKICAgIENoYXkgdHJvbmcgcGhpZW4gSE9TRSAoOTowMC0xNDo0NSArMDcsIFQyLVQ2KS4gTmdvYWkgZ2lvIHR1IHRob2F0IG5oYW5oLgogICAgTmd1b246IGRpcmVjdF9mZXRjaC5weSAoa2JzX3ByaWNlX2JvYXJkICsgdmNpX2luZGV4X2hpc3RvcnkpIOKAlCBmZWVkIGxpdmUgZGEgdmVyaWZ5LgogICAgIiIiCiAgICBpbXBvcnQgc3lzCiAgICBzeXMucGF0aC5pbnNlcnQoMCwgIi9vcHQiKQogICAgaW1wb3J0IGpzb24sIHVybGxpYi5yZXF1ZXN0CiAgICBmcm9tIGRhdGV0aW1lIGltcG9ydCBkYXRldGltZSwgdGltZXpvbmUsIHRpbWVkZWx0YQoKICAgIFBVQkxJU0hfVVJMID0gImh0dHBzOi8vbGV0aGFuaGRvbmcub25lL2FwaS9pbnRlcm5hbC9zdG9jay1wdWJsaXNoIgogICAgaW1wb3J0IG9zCiAgICBTRUNSRVQgPSBvcy5lbnZpcm9uLmdldCgiU1RPQ0tfUFVCTElTSF9TRUNSRVQiLCAiIikKCiAgICAjIEtpZW0gdHJhIGdpbyBnaWFvIGRpY2ggKFZOIHRpbWUpCiAgICB2bl9ub3cgPSBkYXRldGltZS5ub3codGltZXpvbmUudXRjKSArIHRpbWVkZWx0YShob3Vycz03KQogICAgd2QgPSB2bl9ub3cud2Vla2RheSgpICAjIDA9TW9uCiAgICBtaW5zID0gdm5fbm93LmhvdXIgKiA2MCArIHZuX25vdy5taW51dGUKICAgICMgOTowMC0xNDo0NSwgVDItVDYKICAgIGlmIHdkID49IDUgb3Igbm90ICg5ICogNjAgPD0gbWlucyA8PSAxNCAqIDYwICsgNDUpOgogICAgICAgIHByaW50KGYiW3JlYWx0aW1lXSBuZ29haSBnaW8gR0QgKHt2bl9ub3cuc3RyZnRpbWUoJyVIOiVNJyl9IFZOKSwgc2tpcCIpCiAgICAgICAgcmV0dXJuCgogICAgaW1wb3J0IGRpcmVjdF9mZXRjaCBhcyBkZgoKICAgIGRlZiBwdWJsaXNoKHBheWxvYWQpOgogICAgICAgIGRhdGEgPSBqc29uLmR1bXBzKHBheWxvYWQpLmVuY29kZSgpCiAgICAgICAgcmVxID0gdXJsbGliLnJlcXVlc3QuUmVxdWVzdChQVUJMSVNIX1VSTCwgZGF0YT1kYXRhLCBtZXRob2Q9IlBPU1QiKQogICAgICAgIHJlcS5hZGRfaGVhZGVyKCJDb250ZW50LVR5cGUiLCAiYXBwbGljYXRpb24vanNvbiIpCiAgICAgICAgcmVxLmFkZF9oZWFkZXIoIlgtUHVibGlzaC1TZWNyZXQiLCBTRUNSRVQpCiAgICAgICAgcmVxLmFkZF9oZWFkZXIoIlgtSW50ZXJuYWwtU2VjcmV0IiwgU0VDUkVUKQogICAgICAgIHJlcS5hZGRfaGVhZGVyKCJVc2VyLUFnZW50IiwgIk1vemlsbGEvNS4wIikKICAgICAgICB3aXRoIHVybGxpYi5yZXF1ZXN0LnVybG9wZW4ocmVxLCB0aW1lb3V0PTMwKSBhcyByOgogICAgICAgICAgICByZXR1cm4ganNvbi5sb2FkcyhyLnJlYWQoKS5kZWNvZGUoKSkKCiAgICAjIDEuIEJhbmcgZ2lhIHJlYWx0aW1lIHR1IEtCUyAoMSBjYWxsIGNobyB0YXQgY2EgbWEpCiAgICBzeW1ib2xzID0gWyJWQ0IiLCAiQklEIiwgIkNURyIsICJUQ0IiLCAiTUJCIiwgIlZQQiIsICJIUEciLCAiVkhNIiwgIlZJQyIsICJWTk0iLAogICAgICAgICAgICAgICAiTVNOIiwgIkZQVCIsICJNV0ciLCAiU1NJIiwgIlZORCIsICJIQ00iLCAiU1RCIiwgIkFDQiIsICJTSEIiLCAiUE9XIiwKICAgICAgICAgICAgICAgIkdBUyIsICJQTFgiLCAiQlZIIiwgIlZSRSIsICJWSkMiLCAiUE5KIiwgIlNBQiIsICJHVlIiLCAiQkNNIiwgIkNURyJdCiAgICBzeW1ib2xzID0gbGlzdChkaWN0LmZyb21rZXlzKHN5bWJvbHMpKSAgIyBkZWR1cAogICAgdHJ5OgogICAgICAgIGJvYXJkID0gZGYua2JzX3ByaWNlX2JvYXJkKHN5bWJvbHMpCiAgICAgICAgcXVvdGVzID0ge30KICAgICAgICBmb3Igc3ltLCBxIGluIGJvYXJkLml0ZW1zKCk6CiAgICAgICAgICAgIHF1b3Rlc1tzeW1dID0gewogICAgICAgICAgICAgICAgImNsb3NlIjogcS5nZXQoImNsb3NlIiksCiAgICAgICAgICAgICAgICAiY2hhbmdlIjogcS5nZXQoImNoYW5nZSIpLAogICAgICAgICAgICAgICAgInBjdF9jaGFuZ2UiOiBxLmdldCgicGN0X2NoYW5nZSIpLAogICAgICAgICAgICAgICAgInZvbHVtZSI6IHEuZ2V0KCJ2b2x1bWUiKSwKICAgICAgICAgICAgICAgICJ2YWx1ZV92bmQiOiBxLmdldCgidmFsdWUiKSwKICAgICAgICAgICAgICAgICJleGNoYW5nZSI6IHEuZ2V0KCJleGNoYW5nZSIpLAogICAgICAgICAgICAgICAgImJpZCI6IHEuZ2V0KCJiaWQiKSwKICAgICAgICAgICAgICAgICJhc2siOiBxLmdldCgiYXNrIiksCiAgICAgICAgICAgIH0KICAgICAgICByID0gcHVibGlzaCh7InF1b3RlcyI6IHF1b3RlcywKICAgICAgICAgICAgICAgICAgICAgIl9wcm92IjogeyJzb3VyY2UiOiAiZGlyZWN0OmticyIsICJyZXRyaWV2ZWRfYXQiOiBkYXRldGltZS5ub3codGltZXpvbmUudXRjKS5pc29mb3JtYXQoKX19KQogICAgICAgIHByaW50KGYiW3JlYWx0aW1lXSBxdW90ZXM6IHtsZW4ocXVvdGVzKX0gLT4ge3J9IikKICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICAgICBwcmludChmIltyZWFsdGltZV0gcXVvdGVzIGVycm9yOiB7ZX0iKQoKICAgICMgMi4gQ2hpIHNvIHR1IFZDSSAoNCBjYWxsKQogICAgdHJ5OgogICAgICAgIGlkeF9yb3dzID0gW10KICAgICAgICBmb3Igc3ltIGluIFsiVk5JTkRFWCIsICJWTjMwIiwgIkhOWEluZGV4IiwgIlVQQ09NSW5kZXgiXToKICAgICAgICAgICAgaGlzdCA9IGRmLnZjaV9pbmRleF9oaXN0b3J5KHN5bSwgbGltaXQ9MikKICAgICAgICAgICAgaWYgaGlzdDoKICAgICAgICAgICAgICAgIGxhc3QgPSBoaXN0Wy0xXQogICAgICAgICAgICAgICAgcHJldiA9IGhpc3RbLTJdIGlmIGxlbihoaXN0KSA+IDEgZWxzZSB7fQogICAgICAgICAgICAgICAgY2xvc2UgPSBsYXN0LmdldCgiY2xvc2UiKQogICAgICAgICAgICAgICAgcHJldl9jbG9zZSA9IHByZXYuZ2V0KCJjbG9zZSIpIG9yIGxhc3QuZ2V0KCJjbG9zZSIpCiAgICAgICAgICAgICAgICBjaGcgPSByb3VuZChjbG9zZSAtIHByZXZfY2xvc2UsIDIpIGlmIGNsb3NlIGFuZCBwcmV2X2Nsb3NlIGVsc2UgMAogICAgICAgICAgICAgICAgcGN0ID0gcm91bmQoY2hnIC8gcHJldl9jbG9zZSAqIDEwMCwgMikgaWYgcHJldl9jbG9zZSBlbHNlIDAKICAgICAgICAgICAgICAgIGlkeF9yb3dzLmFwcGVuZCh7CiAgICAgICAgICAgICAgICAgICAgInN5bWJvbCI6IHN5bSwKICAgICAgICAgICAgICAgICAgICAiY2xvc2UiOiBjbG9zZSwKICAgICAgICAgICAgICAgICAgICAidm9sdW1lIjogbGFzdC5nZXQoInZvbHVtZSIpLAogICAgICAgICAgICAgICAgICAgICJ0aW1lIjogbGFzdC5nZXQoImRhdGUiKSwKICAgICAgICAgICAgICAgICAgICAiY2hhbmdlIjogY2hnLAogICAgICAgICAgICAgICAgICAgICJwY3RfY2hhbmdlIjogcGN0LAogICAgICAgICAgICAgICAgfSkKICAgICAgICBpZiBpZHhfcm93czoKICAgICAgICAgICAgciA9IHB1Ymxpc2goeyJpbmRpY2VzIjogaWR4X3Jvd3MsCiAgICAgICAgICAgICAgICAgICAgICAgICAiX3Byb3YiOiB7InNvdXJjZSI6ICJkaXJlY3Q6dmNpIiwgInJldHJpZXZlZF9hdCI6IGRhdGV0aW1lLm5vdyh0aW1lem9uZS51dGMpLmlzb2Zvcm1hdCgpfX0pCiAgICAgICAgICAgIHByaW50KGYiW3JlYWx0aW1lXSBpbmRpY2VzOiB7bGVuKGlkeF9yb3dzKX0gLT4ge3J9IikKICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICAgICBwcmludChmIltyZWFsdGltZV0gaW5kaWNlcyBlcnJvcjoge2V9IikKCiAgICBwcmludCgiW3JlYWx0aW1lXSBkb25lLiIpCgoKQGFwcC5mdW5jdGlvbigKICAgIGltYWdlPWJvb2tfaW1hZ2UsCiAgICBzZWNyZXRzPVttb2RhbC5TZWNyZXQuZnJvbV9uYW1lKCJwb2NrZXQtcGVyc29uYWwiKV0sCiAgICB2b2x1bWVzPXsiL2RhdGEiOiB2b2x1bWV9LAogICAgc2NoZWR1bGU9bW9kYWwuQ3JvbigiMCAxNyAqICogKiIpLCAgIyBkYWlseSBhdCAxNzowMCBVVEMgKG1pZG5pZ2h0ICswNykKICAgIHRpbWVvdXQ9NjAwLAopCmRlZiBkMV9iYWNrdXAoKToKICAgICIiIkRhaWx5IEQxIGJhY2t1cCB0byBNb2RhbCBWb2x1bWUuIEtlZXBzIDcgdmVyc2lvbnMuIiIiCiAgICBpbXBvcnQganNvbiwgb3MsIGdsb2IsIGRhdGV0aW1lLCB1cmxsaWIucmVxdWVzdAoKICAgIENGX1RPS0VOID0gb3MuZW52aXJvblsiQ0ZfQVBJX1RPS0VOIl0KICAgIEFQSSA9ICJodHRwczovL2FwaS5jbG91ZGZsYXJlLmNvbS9jbGllbnQvdjQiCiAgICBBQ0NUID0gIjI1YjIzMjdlOTMyZDI2ZTU0ODdjMmJhOGFkMDU4OTMyIgogICAgRDFfSUQgPSAiZTg1NmRiNGQtMWVlMS00MmZkLTljMWQtMTgwN2NhMzFhZmI1IgogICAgS0VFUCA9IDcKCiAgICBkZWYgYXBpKG1ldGhvZCwgcGF0aCwgZGF0YT1Ob25lKToKICAgICAgICB1cmwgPSBBUEkgKyBwYXRoCiAgICAgICAgYm9keSA9IGpzb24uZHVtcHMoZGF0YSkuZW5jb2RlKCkgaWYgZGF0YSBpcyBub3QgTm9uZSBlbHNlIE5vbmUKICAgICAgICByZXEgPSB1cmxsaWIucmVxdWVzdC5SZXF1ZXN0KHVybCwgZGF0YT1ib2R5LCBtZXRob2Q9bWV0aG9kKQogICAgICAgIHJlcS5hZGRfaGVhZGVyKCJBdXRob3JpemF0aW9uIiwgZiJCZWFyZXIge0NGX1RPS0VOfSIpCiAgICAgICAgcmVxLmFkZF9oZWFkZXIoIkNvbnRlbnQtVHlwZSIsICJhcHBsaWNhdGlvbi9qc29uIikKICAgICAgICB3aXRoIHVybGxpYi5yZXF1ZXN0LnVybG9wZW4ocmVxLCB0aW1lb3V0PTEyMCkgYXMgcmVzcDoKICAgICAgICAgICAgcmV0dXJuIGpzb24ubG9hZHMocmVzcC5yZWFkKCkuZGVjb2RlKCkpCgogICAgdG9kYXkgPSBkYXRldGltZS5kYXRlLnRvZGF5KCkuaXNvZm9ybWF0KCkKICAgIHRhYmxlc19yID0gYXBpKCJQT1NUIiwgZiIvYWNjb3VudHMve0FDQ1R9L2QxL2RhdGFiYXNlL3tEMV9JRH0vcXVlcnkiLAogICAgICAgICAgICAgICAgICAgeyJzcWwiOiAiU0VMRUNUIG5hbWUgRlJPTSBzcWxpdGVfbWFzdGVyIFdIRVJFIHR5cGU9J3RhYmxlJyBBTkQgbmFtZSBOT1QgTElLRSAnc3FsaXRlXyUnIn0pCiAgICBpZiBub3QgdGFibGVzX3IuZ2V0KCJzdWNjZXNzIik6CiAgICAgICAgcHJpbnQoIkZhaWxlZCB0byBsaXN0IHRhYmxlcyIpCiAgICAgICAgcmV0dXJuCiAgICB0YWJsZXMgPSBbclsibmFtZSJdIGZvciByIGluIHRhYmxlc19yWyJyZXN1bHQiXVswXVsicmVzdWx0cyJdXQoKICAgIGJhY2t1cCA9IHsiZGF0ZSI6IHRvZGF5LCAidGFibGVzIjoge319CiAgICBmb3IgdCBpbiB0YWJsZXM6CiAgICAgICAgdHJ5OgogICAgICAgICAgICByID0gYXBpKCJQT1NUIiwgZiIvYWNjb3VudHMve0FDQ1R9L2QxL2RhdGFiYXNlL3tEMV9JRH0vcXVlcnkiLAogICAgICAgICAgICAgICAgICAgIHsic3FsIjogZidTRUxFQ1QgKiBGUk9NICJ7dH0iIExJTUlUIDEwMDAwJ30pCiAgICAgICAgICAgIGlmIHIuZ2V0KCJzdWNjZXNzIik6CiAgICAgICAgICAgICAgICBiYWNrdXBbInRhYmxlcyJdW3RdID0gclsicmVzdWx0Il1bMF1bInJlc3VsdHMiXQogICAgICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICAgICAgICAgcHJpbnQoZiIgIHNraXAge3R9OiB7ZX0iKQoKICAgIGRhdGEgPSBqc29uLmR1bXBzKGJhY2t1cCwgZW5zdXJlX2FzY2lpPUZhbHNlKS5lbmNvZGUoKQogICAgb3MubWFrZWRpcnMoIi9kYXRhL2JhY2t1cHMvZDEiLCBleGlzdF9vaz1UcnVlKQogICAga2V5ID0gZiIvZGF0YS9iYWNrdXBzL2QxL3t0b2RheX0uanNvbiIKICAgIHdpdGggb3BlbihrZXksICJ3YiIpIGFzIGY6CiAgICAgICAgZi53cml0ZShkYXRhKQogICAgcHJpbnQoZiJCYWNrdXA6IHtsZW4odGFibGVzKX0gdGFibGVzLCB7bGVuKGRhdGEpfSBieXRlcyAtPiB7a2V5fSIpCgogICAgb2xkcyA9IHNvcnRlZChnbG9iLmdsb2IoIi9kYXRhL2JhY2t1cHMvZDEvKi5qc29uIikpCiAgICBmb3Igb2xkX2tleSBpbiBvbGRzWzotS0VFUF06CiAgICAgICAgb3MucmVtb3ZlKG9sZF9rZXkpCiAgICAgICAgcHJpbnQoZiIgIGRlbGV0ZWQgb2xkOiB7b2xkX2tleX0iKQoKICAgIHZvbHVtZS5jb21taXQoKQo=
+"""
+Modal cron jobs for Pocket Personal (k1 Section 2).
+Trigger deploy: 2026-10-19 22:06
+
+3 scheduled functions:
+1. book_processor  - every 5 min: process PDF uploads from R2 (English Lab Books)
+2. publish_snapshot - every 30 min: publish stock snapshots via vnstock.
+   Payload DUNG contract Worker ({"indices": [...]} -> market/indices.json,
+   {"quotes": {SYM: {...}}} -> market/quotes.json) - 2026-10-15: phat hien
+   ban cu gui {"type","data"} nen Worker written:0 (khong ghi gi ca).
+   Indices lay qua index(symbol).ohlcv nhu script VM (market.indices()
+   khong con o vnstock v3).
+   Failure policy (ong lon style): track per-step success; if NOTHING was
+   published (total failure) -> send Telegram alert via Worker
+   /api/internal/modal-alert, then raise so the dashboard shows Failed.
+   Partial failure only logs; the next run retries in 30 min.
+3. d1_backup        - daily: backup D1 to Modal Volume (keep 7 versions)
+
+Secrets (Modal dashboard -> Secrets -> "pocket-personal"):
+  - CF_API_TOKEN
+  - STOCK_PUBLISH_SECRET
+  - VNSTOCK_API_KEY
+
+Deploy:
+  modal deploy app.py
+
+Test single run:
+  modal run app.py::book_processor
+  modal run app.py::publish_snapshot
+  modal run app.py::d1_backup
+"""
+import modal
+
+# Persistent volume for state (D1 backups, temp files)
+volume = modal.Volume.from_name("pocket-personal-vol", create_if_missing=True)
+
+# Image with all dependencies
+book_image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .pip_install("pymupdf", "requests")
+)
+
+stock_image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .pip_install("requests")
+    .pip_install("vnstock>=5,<6", extra_index_url="https://vnstocks.com/api/packages")
+    .add_local_file("/home/hatch/workspace/stock-app/scripts/direct_fetch.py", "/opt/direct_fetch.py")
+)
+
+# Realtime image: KHONG can vnstock, chi can direct_fetch (tu chu du lieu)
+# VCI trading + KBS board la feed live trong phien, polling 60s
+realtime_image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .pip_install("requests")
+    .add_local_file("/home/hatch/workspace/stock-app/scripts/direct_fetch.py", "/opt/direct_fetch.py")
+)
+
+app = modal.App("pocket-personal-crons")
+
+
+@app.function(
+    image=book_image,
+    secrets=[modal.Secret.from_name("pocket-personal")],
+    volumes={"/data": volume},
+    schedule=modal.Cron("*/5 * * * *"),  # every 5 minutes
+    timeout=600,
+)
+def book_processor():
+    """Process pending PDF book uploads from R2 every 5 minutes."""
+    import json, re, os, tempfile, urllib.request
+    from datetime import datetime
+
+    CF_TOKEN = os.environ["CF_API_TOKEN"]
+    API = "https://api.cloudflare.com/client/v4"
+    ACCOUNT = "25b2327e932d26e5487c2ba8ad058932"
+    BUCKET = "english-lab-data"
+
+    def api_req(method, path, data=None, raw=False):
+        url = API + path
+        body = json.dumps(data).encode() if data is not None else None
+        req = urllib.request.Request(url, data=body, method=method)
+        req.add_header("Authorization", f"Bearer {CF_TOKEN}")
+        if not raw:
+            req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            if raw:
+                return resp.read()
+            return json.loads(resp.read().decode())
+
+    def r2_download(key):
+        return api_req("GET", f"/accounts/{ACCOUNT}/r2/buckets/{BUCKET}/objects/{key}", raw=True)
+
+    def r2_list(prefix):
+        out = api_req("GET", f"/accounts/{ACCOUNT}/r2/buckets/{BUCKET}/objects?prefix={prefix}")
+        result = out.get("result", [])
+        return result if isinstance(result, list) else result.get("objects", [])
+
+    def r2_delete(key):
+        api_req("DELETE", f"/accounts/{ACCOUNT}/r2/buckets/{BUCKET}/objects/{key}")
+
+    def r2_put(key, obj):
+        data = json.dumps(obj).encode()
+        req = urllib.request.Request(
+            f"{API}/accounts/{ACCOUNT}/r2/buckets/{BUCKET}/objects/{key}",
+            data=data, method="PUT")
+        req.add_header("Authorization", f"Bearer {CF_TOKEN}")
+        req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=120):
+            pass
+
+    # Find pending PDFs
+    pending = r2_list("books/pending/")
+    if not pending:
+        print(f"[{datetime.now().isoformat()}] book_processor: no pending PDFs")
+        return
+
+    import fitz  # pymupdf
+
+    for obj in pending:
+        key = obj["key"]
+        print(f"Processing {key}...")
+        try:
+            pdf_bytes = r2_download(key)
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tf:
+                tf.write(pdf_bytes)
+                pdf_path = tf.name
+
+            doc = fitz.open(pdf_path)
+            full_text = ""
+            for page in doc:
+                full_text += page.get_text() + "\n"
+            doc.close()
+            os.unlink(pdf_path)
+
+            # Basic chapter detection (lines that look like headings)
+            lines = full_text.split("\n")
+            chapters = []
+            current = {"title": "Chapter 1", "text": ""}
+            for line in lines:
+                stripped = line.strip()
+                if re.match(r"^(chapter|chương)\s+\d+", stripped, re.I) and len(stripped) < 80:
+                    if current["text"].strip():
+                        chapters.append(current)
+                    current = {"title": stripped, "text": ""}
+                else:
+                    current["text"] += line + "\n"
+            if current["text"].strip():
+                chapters.append(current)
+
+            # Simple CEFR estimation by avg word length + sentence length
+            words = full_text.split()
+            avg_wl = sum(len(w) for w in words) / max(len(words), 1) if words else 0
+            if avg_wl < 4.5:
+                cefr = "A1"
+            elif avg_wl < 5.0:
+                cefr = "A2"
+            elif avg_wl < 5.5:
+                cefr = "B1"
+            elif avg_wl < 6.0:
+                cefr = "B2"
+            else:
+                cefr = "C1"
+
+            book_id = os.path.basename(key).replace(".pdf", "")
+            result = {
+                "book_id": book_id,
+                "source_key": key,
+                "processed_at": datetime.now().isoformat(),
+                "cefr": cefr,
+                "word_count": len(words),
+                "chapters": [
+                    {"title": c["title"], "word_count": len(c["text"].split())}
+                    for c in chapters
+                ],
+                "full_text_key": f"books/text/{book_id}.txt",
+            }
+
+            # Upload extracted text and metadata
+            r2_put(f"books/text/{book_id}.txt", {"text": full_text})
+            r2_put(f"books/meta/{book_id}.json", result)
+            r2_delete(key)  # remove from pending
+
+            print(f"  -> {book_id}: {len(words)} words, {len(chapters)} chapters, CEFR {cefr}")
+        except Exception as e:
+            print(f"  ERROR {key}: {e}")
+
+    volume.commit()
+
+
+@app.function(
+    image=stock_image,
+    secrets=[modal.Secret.from_name("pocket-personal")],
+    volumes={"/data": volume},
+    # DISABLED 2026-10-19: thay bang realtime_poller (1 phut/lan, tu chu VCI/KBS)
+    # schedule=modal.Cron("*/30 2-7 * * 1-5", timezone="UTC"),
+    timeout=1200,
+)
+def publish_snapshot():
+    """Publish stock snapshot every 30 min during HOSE trading hours."""
+    import json, math, os, sys, time, urllib.request
+    from datetime import date, timedelta
+
+    PUBLISH_URL = "https://lethanhdong.one/api/internal/stock-publish"
+    ALERT_URL = "https://lethanhdong.one/api/internal/modal-alert"
+    SECRET = os.environ["STOCK_PUBLISH_SECRET"]
+    VNSTOCK_KEY = os.environ.get("VNSTOCK_API_KEY")
+
+    # vnstock 5.x: dang ky device bang key Community (Henrry yeu cau).
+    # Luu auth tren volume persistent /data de khong register lai moi run.
+    import subprocess
+    _vnhome = "/data/.vnstock"
+    os.makedirs(_vnhome, exist_ok=True)
+    os.environ["HOME"] = "/data"  # ~/.vnstock -> /data/.vnstock (persistent)
+    # Kiem tra device da register THAT chua (file ton tai chua du;
+    # lan truoc register that bai van de lai file stale)
+    def _device_ok():
+        try:
+            _sp = subprocess.run(["vnstock", "status"], capture_output=True,
+                                 timeout=30, env={**os.environ, "HOME": "/data"})
+            _out = _sp.stdout.decode() + _sp.stderr.decode()
+            return "Thiết bị:" in _out and "chưa" not in _out.lower().split("thiết bị:")[1][:50]
+        except Exception:
+            return False
+    if not _device_ok() and VNSTOCK_KEY:
+        print("vnstock: registering device with Community key...", flush=True)
+        try:
+            # Xoa auth stale truoc khi register lai
+            import shutil
+            shutil.rmtree(os.path.join(_vnhome, "auth"), ignore_errors=True)
+            _rp = subprocess.run(
+                ["vnstock", "register", "--stdin"],
+                input=VNSTOCK_KEY.encode(), capture_output=True, timeout=90,
+                env={**os.environ, "HOME": "/data"},
+            )
+            print("vnstock register: " + _rp.stdout.decode()[:300], flush=True)
+            if _rp.returncode != 0:
+                print("vnstock register FAILED: " + _rp.stderr.decode()[:300], flush=True)
+        except Exception as _re:
+            print(f"vnstock register error: {_re}", flush=True)
+
+    from vnstock import Market
+    import vnstock as _vnmod  # doc version runtime de gan vao _prov
+
+    def vn_call(fn, label, retries=3):
+        for attempt in range(retries):
+            try:
+                return fn()
+            except SystemExit:
+                print(f"[{label}] rate limit, sleep 70s (try {attempt+1})", flush=True)
+                time.sleep(70)
+            except Exception as e:
+                print(f"[{label}] error: {e} (try {attempt+1})", flush=True)
+                time.sleep(5)
+        print(f"[{label}] skipped after {retries} tries", flush=True)
+        return None
+
+    def publish(payload):
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(PUBLISH_URL, data=data, method="POST")
+        req.add_header("Content-Type", "application/json")
+        req.add_header("X-Publish-Secret", SECRET)
+        req.add_header("X-Internal-Secret", SECRET)
+        req.add_header("User-Agent", "Mozilla/5.0 (compatible; PocketPersonal/1.0)")
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            return json.loads(resp.read().decode())
+
+    def _prov(source):
+        """Provenance (hoc tu vnstock 5): gan version vnstock THAT dang chay
+        trong image, de biet du lieu tu stock4 hay stock5."""
+        from datetime import datetime, timezone
+        ver = "?"
+        try:
+            from importlib.metadata import version as _pkg_version
+            ver = _pkg_version("vnstock")
+        except Exception:
+            ver = getattr(_vnmod, "__version__", "?")
+        return {"source": f"{source}/{ver}",
+                "retrieved_at": datetime.now(timezone.utc).isoformat()}
+
+    def send_fail_alert(detail):
+        """Bao Henrry qua Telegram khi run that bai hoan toan (kieu ong lon:
+        alert on meaningful failure, tranh alert fatigue khi chi loi 1 phan)."""
+        from datetime import datetime, timezone
+        try:
+            data = json.dumps({
+                "app": "pocket-personal-crons",
+                "fn": "publish_snapshot",
+                "time": datetime.now(timezone.utc).isoformat(),
+                "detail": detail,
+            }).encode()
+            req = urllib.request.Request(ALERT_URL, data=data, method="POST")
+            req.add_header("Content-Type", "application/json")
+            req.add_header("X-Publish-Secret", SECRET)
+            req.add_header("X-Internal-Secret", SECRET)
+            req.add_header("User-Agent", "Mozilla/5.0 (compatible; PocketPersonal/1.0)")
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                print(f"  fail alert sent: HTTP {resp.status}", flush=True)
+        except Exception as e:
+            print(f"  fail alert error: {e}", flush=True)
+
+    def clean_num(v):
+        """So sach: None/NaN/inf -> None (tranh loi serialize nhu script VM)."""
+        if v is None:
+            return None
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return None
+        return None if math.isnan(f) or math.isinf(f) else f
+
+    def clean_rec(r):
+        return {k: (None if isinstance(v, float) and (math.isnan(v) or math.isinf(v)) else v)
+                for k, v in r.items()}
+
+    print(f"[{date.today().isoformat()}] publish_snapshot starting...")
+    market = Market()
+    ok_indices = False
+    ok_quotes = False
+
+    # Indices: pattern nhu script VM (dung ohlcv tung index, lay 2 bar cuoi
+    # de tinh change/pct_change). market.indices() khong con ton tai o vnstock v3.
+    try:
+        end = date.today().isoformat()
+        start = (date.today() - timedelta(days=10)).isoformat()
+        idx_rows = []
+        for sym in ["VNINDEX", "VN30", "HNXIndex", "UPCOMIndex"]:
+            recs = vn_call(
+                lambda s=sym: [clean_rec(r) for r in
+                               market.index(symbol=s).ohlcv(start=start, end=end).to_dict("records")],
+                f"indices-{sym}", retries=2)
+            item = {"symbol": sym}
+            if recs:
+                last = recs[-1]
+                item["close"] = clean_num(last.get("close"))
+                item["volume"] = clean_num(last.get("volume"))
+                t = last.get("time")
+                # 5.x: time la pandas Timestamp -> lay date; 4.x: str -> cat 10 ky tu
+                item["time"] = t[:10] if isinstance(t, str) else str(t)[:10]
+                if len(recs) >= 2:
+                    prev, cur = clean_num(recs[-2].get("close")), item["close"]
+                    if prev and cur:
+                        item["change"] = round(cur - prev, 2)
+                        item["pct_change"] = round((cur - prev) / prev * 100, 2)
+            idx_rows.append(item)
+            time.sleep(2)  # respect rate limit
+        if idx_rows:
+            # Contract Worker: {"indices": [...]} -> market/indices.json {rows: [...]}
+            result = publish({"indices": idx_rows, "_prov": _prov("vnstock")})
+            print(f"  indices: {len(idx_rows)} -> {result}")
+            ok_indices = True
+    except Exception as e:
+        print(f"  indices publish error: {e}")
+
+    # Quotes: map field that cua vnstock sang dung contract frontend
+    # {close, change, pct_change, volume, value_vnd, exchange} theo ma CK.
+    # vnstock 5.x: dung price_board (1 call cho 20 ma) thay vi 20x quote().
+    # 5.x khong co san price_change/percent_change/volume_accumulated/total_value
+    # -> change/pct_change tu tinh tu reference_price; volume/value_vnd = None
+    # (frontend khong dung 2 field nay tu quotes; AI context co fallback "—").
+    symbols = ["VCB", "BID", "CTG", "TCB", "MBB", "VPB", "HPG", "VHM", "VIC", "VNM",
+               "MSN", "FPT", "MWG", "SSI", "VND", "HCM", "STB", "ACB", "SHB", "POW"]
+    by_symbol = {}
+    board_recs = vn_call(lambda: market.price_board(symbols).to_dict("records"),
+                         "quote-board", retries=2)
+    if board_recs:
+        for r in board_recs:
+            sym = r.get("symbol")
+            close = clean_num(r.get("close_price"))
+            ref = clean_num(r.get("reference_price"))
+            chg = round(close - ref, 2) if (close is not None and ref) else None
+            pct = round(chg / ref * 100, 2) if (chg is not None and ref) else None
+            by_symbol[sym] = {
+                "close": close,
+                "change": chg,
+                "pct_change": pct,
+                "volume": None,
+                "value_vnd": None,
+                "exchange": r.get("exchange"),
+            }
+
+    if by_symbol:
+        try:
+            # Contract Worker: {"quotes": {SYM: {...}}} -> market/quotes.json {by_symbol: {...}}
+            result = publish({"quotes": by_symbol, "_prov": _prov("vnstock")})
+            print(f"  quotes: {len(by_symbol)} symbols -> {result}")
+            ok_quotes = True
+        except Exception as e:
+            print(f"  quotes publish error: {e}")
+
+    # That bai hoan toan (khong publish duoc gi) -> alert + raise de
+    # dashboard Modal hien Failed. Loi 1 phan thi chi log, run sau tu retry.
+    if not ok_indices and not ok_quotes:
+        detail = "indices: FAILED, quotes: FAILED"
+        send_fail_alert(detail)
+        raise RuntimeError(f"publish_snapshot failed: {detail}")
+
+    print("publish_snapshot done.")
+    volume.commit()
+
+
+@app.function(
+    image=realtime_image,
+    secrets=[modal.Secret.from_name("pocket-personal")],
+    schedule=modal.Cron("* 2-7 * * 1-5", timezone="UTC"),  # every 1 min, 09:00-14:59 +07, Mon-Fri
+    timeout=120,
+)
+def realtime_poller():
+    """Realtime poller: lay gia live tu VCI/KBS (tu chu, khong qua vnstock), publish len R2 moi 60s.
+
+    Chay trong phien HOSE (9:00-14:45 +07, T2-T6). Ngoai gio tu thoat nhanh.
+    Nguon: direct_fetch.py (kbs_price_board + vci_index_history) — feed live da verify.
+    """
+    import sys
+    sys.path.insert(0, "/opt")
+    import json, urllib.request
+    from datetime import datetime, timezone, timedelta
+
+    PUBLISH_URL = "https://lethanhdong.one/api/internal/stock-publish"
+    import os
+    SECRET = os.environ.get("STOCK_PUBLISH_SECRET", "")
+
+    # Kiem tra gio giao dich (VN time)
+    vn_now = datetime.now(timezone.utc) + timedelta(hours=7)
+    wd = vn_now.weekday()  # 0=Mon
+    mins = vn_now.hour * 60 + vn_now.minute
+    # 9:00-14:45, T2-T6
+    if wd >= 5 or not (9 * 60 <= mins <= 14 * 60 + 45):
+        print(f"[realtime] ngoai gio GD ({vn_now.strftime('%H:%M')} VN), skip")
+        return
+
+    import direct_fetch as df
+
+    def publish(payload):
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(PUBLISH_URL, data=data, method="POST")
+        req.add_header("Content-Type", "application/json")
+        req.add_header("X-Publish-Secret", SECRET)
+        req.add_header("X-Internal-Secret", SECRET)
+        req.add_header("User-Agent", "Mozilla/5.0")
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read().decode())
+
+    # 1. Bang gia realtime tu KBS (1 call cho tat ca ma)
+    symbols = ["VCB", "BID", "CTG", "TCB", "MBB", "VPB", "HPG", "VHM", "VIC", "VNM",
+               "MSN", "FPT", "MWG", "SSI", "VND", "HCM", "STB", "ACB", "SHB", "POW",
+               "GAS", "PLX", "BVH", "VRE", "VJC", "PNJ", "SAB", "GVR", "BCM", "CTG"]
+    symbols = list(dict.fromkeys(symbols))  # dedup
+    try:
+        board = df.kbs_price_board(symbols)
+        quotes = {}
+        for sym, q in board.items():
+            quotes[sym] = {
+                "close": q.get("close"),
+                "change": q.get("change"),
+                "pct_change": q.get("pct_change"),
+                "volume": q.get("volume"),
+                "value_vnd": q.get("value"),
+                "exchange": q.get("exchange"),
+                "bid": q.get("bid"),
+                "ask": q.get("ask"),
+            }
+        r = publish({"quotes": quotes,
+                     "_prov": {"source": "direct:kbs", "retrieved_at": datetime.now(timezone.utc).isoformat()}})
+        print(f"[realtime] quotes: {len(quotes)} -> {r}")
+    except Exception as e:
+        print(f"[realtime] quotes error: {e}")
+
+    # 2. Chi so tu VCI (4 call)
+    try:
+        idx_rows = []
+        for sym in ["VNINDEX", "VN30", "HNXIndex", "UPCOMIndex"]:
+            hist = df.vci_index_history(sym, limit=2)
+            if hist:
+                last = hist[-1]
+                prev = hist[-2] if len(hist) > 1 else {}
+                close = last.get("close")
+                prev_close = prev.get("close") or last.get("close")
+                chg = round(close - prev_close, 2) if close and prev_close else 0
+                pct = round(chg / prev_close * 100, 2) if prev_close else 0
+                idx_rows.append({
+                    "symbol": sym,
+                    "close": close,
+                    "volume": last.get("volume"),
+                    "time": last.get("date"),
+                    "change": chg,
+                    "pct_change": pct,
+                })
+        if idx_rows:
+            r = publish({"indices": idx_rows,
+                         "_prov": {"source": "direct:vci", "retrieved_at": datetime.now(timezone.utc).isoformat()}})
+            print(f"[realtime] indices: {len(idx_rows)} -> {r}")
+    except Exception as e:
+        print(f"[realtime] indices error: {e}")
+
+    print("[realtime] done.")
+
+
+@app.function(
+    image=book_image,
+    secrets=[modal.Secret.from_name("pocket-personal")],
+    volumes={"/data": volume},
+    schedule=modal.Cron("0 17 * * *"),  # daily at 17:00 UTC (midnight +07)
+    timeout=600,
+)
+def d1_backup():
+    """Daily D1 backup to Modal Volume. Keeps 7 versions."""
+    import json, os, glob, datetime, urllib.request
+
+    CF_TOKEN = os.environ["CF_API_TOKEN"]
+    API = "https://api.cloudflare.com/client/v4"
+    ACCT = "25b2327e932d26e5487c2ba8ad058932"
+    D1_ID = "e856db4d-1ee1-42fd-9c1d-1807ca31afb5"
+    KEEP = 7
+
+    def api(method, path, data=None):
+        url = API + path
+        body = json.dumps(data).encode() if data is not None else None
+        req = urllib.request.Request(url, data=body, method=method)
+        req.add_header("Authorization", f"Bearer {CF_TOKEN}")
+        req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return json.loads(resp.read().decode())
+
+    today = datetime.date.today().isoformat()
+    tables_r = api("POST", f"/accounts/{ACCT}/d1/database/{D1_ID}/query",
+                   {"sql": "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"})
+    if not tables_r.get("success"):
+        print("Failed to list tables")
+        return
+    tables = [r["name"] for r in tables_r["result"][0]["results"]]
+
+    backup = {"date": today, "tables": {}}
+    for t in tables:
+        try:
+            r = api("POST", f"/accounts/{ACCT}/d1/database/{D1_ID}/query",
+                    {"sql": f'SELECT * FROM "{t}" LIMIT 10000'})
+            if r.get("success"):
+                backup["tables"][t] = r["result"][0]["results"]
+        except Exception as e:
+            print(f"  skip {t}: {e}")
+
+    data = json.dumps(backup, ensure_ascii=False).encode()
+    os.makedirs("/data/backups/d1", exist_ok=True)
+    key = f"/data/backups/d1/{today}.json"
+    with open(key, "wb") as f:
+        f.write(data)
+    print(f"Backup: {len(tables)} tables, {len(data)} bytes -> {key}")
+
+    olds = sorted(glob.glob("/data/backups/d1/*.json"))
+    for old_key in olds[:-KEEP]:
+        os.remove(old_key)
+        print(f"  deleted old: {old_key}")
+
+    volume.commit()
