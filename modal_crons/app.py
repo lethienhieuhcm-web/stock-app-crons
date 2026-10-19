@@ -1,6 +1,5 @@
 """
 Modal cron jobs for Pocket Personal (k1 Section 2).
-Trigger deploy: 2026-10-19 22:06
 
 3 scheduled functions:
 1. book_processor  - every 5 min: process PDF uploads from R2 (English Lab Books)
