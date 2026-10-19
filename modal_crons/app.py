@@ -455,6 +455,12 @@ def realtime_poller():
                 "exchange": q.get("exchange"),
                 "bid": q.get("bid"),
                 "ask": q.get("ask"),
+                # Khoi ngoai (KBS tra san FB/FS/FO/FR) — frontend hien "NN mua/ban".
+                # Phai publish o day vi realtime ghi de toan bo quotes.json moi phut.
+                "foreign_buy_volume": q.get("foreign_buy_volume"),
+                "foreign_sell_volume": q.get("foreign_sell_volume"),
+                "foreign_buy_value": q.get("foreign_buy_value"),
+                "foreign_sell_value": q.get("foreign_sell_value"),
             }
         r = publish({"quotes": quotes,
                      "_prov": {"source": "direct:kbs", "retrieved_at": datetime.now(timezone.utc).isoformat()}})
