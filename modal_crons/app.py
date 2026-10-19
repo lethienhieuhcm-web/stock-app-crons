@@ -1,19 +1,15 @@
 """
 Modal cron jobs for Pocket Personal (k1 Section 2).
 
-3 scheduled functions:
+4 scheduled functions:
 1. book_processor  - every 5 min: process PDF uploads from R2 (English Lab Books)
-2. publish_snapshot - every 30 min: publish stock snapshots via vnstock.
+2. publish_snapshot - DISABLED 2026-10-19 (thay bang realtime_poller).
+   Giuchuc nang de chay tay khi can.
+3. realtime_poller - every 1 min trong phien HOSE (9:00-14:45 +07, T2-T6):
+   lay gia live tu VCI/KBS (tu chu, khong qua vnstock), publish len R2.
    Payload DUNG contract Worker ({"indices": [...]} -> market/indices.json,
-   {"quotes": {SYM: {...}}} -> market/quotes.json) - 2026-10-15: phat hien
-   ban cu gui {"type","data"} nen Worker written:0 (khong ghi gi ca).
-   Indices lay qua index(symbol).ohlcv nhu script VM (market.indices()
-   khong con o vnstock v3).
-   Failure policy (ong lon style): track per-step success; if NOTHING was
-   published (total failure) -> send Telegram alert via Worker
-   /api/internal/modal-alert, then raise so the dashboard shows Failed.
-   Partial failure only logs; the next run retries in 30 min.
-3. d1_backup        - daily: backup D1 to Modal Volume (keep 7 versions)
+   {"quotes": {SYM: {...}}} -> market/quotes.json).
+4. d1_backup        - daily: backup D1 to Modal Volume (keep 7 versions)
 
 Secrets (Modal dashboard -> Secrets -> "pocket-personal"):
   - CF_API_TOKEN
@@ -417,6 +413,8 @@ def realtime_poller():
     PUBLISH_URL = "https://lethanhdong.one/api/internal/stock-publish"
     import os
     SECRET = os.environ.get("STOCK_PUBLISH_SECRET", "")
+    if not SECRET:
+        raise RuntimeError("[realtime] thieu STOCK_PUBLISH_SECRET trong Modal Secrets 'pocket-personal'")
 
     # Kiem tra gio giao dich (VN time)
     vn_now = datetime.now(timezone.utc) + timedelta(hours=7)
