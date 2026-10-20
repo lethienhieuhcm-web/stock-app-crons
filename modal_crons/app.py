@@ -403,7 +403,8 @@ def realtime_poller():
     """Realtime poller: lay gia live tu VCI/KBS (tu chu, khong qua vnstock), publish len R2 moi 60s.
 
     Chay trong phien HOSE (9:00-14:45 +07, T2-T6). Ngoai gio tu thoat nhanh.
-    Nguon: direct_fetch.py (kbs_price_board + vci_index_history) — feed live da verify.
+    Nguon: direct_fetch.py — quotes: kbs_price_board; indices: vnd_index_snapshot
+    (VNDirect dchart, doi chieu cheo + fallback bang vci_index_history).
     """
     import sys
     sys.path.insert(0, "/opt")
@@ -468,32 +469,65 @@ def realtime_poller():
     except Exception as e:
         print(f"[realtime] quotes error: {e}")
 
-    # 2. Chi so tu VCI (4 call)
+    # 2. Chi so: nguon chinh VNDirect dchart (truc tiep), doi chieu cheo VCI.
+    # 2026-10-20: bo vci_index_history lam nguon chinh — feed EOD cham 1 ngay
+    # + sap xep GIAM dan (moi nhat truoc), code cu lay hist[-1] nen dang so
+    # phien cu nhat trong cua so lam "hom nay" ca ngay (VNINDEX dung o so
+    # 16/10 trong phien 20/10). VCI chi con vai tro doi chieu + fallback
+    # (fallback gan dung ngay cua so nen app khong hieu nham la truc tiep).
+    def _vci_close_on(sym, day):
+        """Close cua phien `day` theo VCI IQ history (feed giam dan)."""
+        try:
+            for h in df.vci_index_history(sym, limit=7):
+                if h.get("date") == day:
+                    return h.get("close")
+        except Exception:
+            pass
+        return None
+
     try:
         idx_rows = []
-        for sym in ["VNINDEX", "VN30", "HNXIndex", "UPCOMIndex"]:
-            hist = df.vci_index_history(sym, limit=2)
-            if hist:
-                last = hist[-1]
-                prev = hist[-2] if len(hist) > 1 else {}
-                close = last.get("close")
-                prev_close = prev.get("close") or last.get("close")
-                chg = round(close - prev_close, 2) if close and prev_close else 0
-                pct = round(chg / prev_close * 100, 2) if prev_close else 0
-                idx_rows.append({
-                    "symbol": sym,
-                    "close": close,
-                    "volume": last.get("volume"),
-                    "time": last.get("date"),
-                    "change": chg,
-                    "pct_change": pct,
-                })
+        for row in df.vnd_index_snapshot():
+            vci_pc = _vci_close_on(row["symbol"], row["prev_date"])
+            if vci_pc and row["prev_close"]:
+                lech = abs(vci_pc - row["prev_close"]) / row["prev_close"] * 100
+                if lech > 0.5:
+                    print(f"[realtime] indices {row['symbol']}: LECH doi chieu "
+                          f"VND prev={row['prev_close']} vs VCI={vci_pc} ({lech:.2f}%) "
+                          f"-> bo qua chi so nay, giu so cu")
+                    continue
+            idx_rows.append({k: row[k] for k in
+                             ("symbol", "close", "volume", "time",
+                              "change", "pct_change")})
         if idx_rows:
             r = publish({"indices": idx_rows,
-                         "_prov": {"source": "direct:vci", "retrieved_at": datetime.now(timezone.utc).isoformat()}})
-            print(f"[realtime] indices: {len(idx_rows)} -> {r}")
+                         "_prov": {"source": "direct:vndirect", "retrieved_at": datetime.now(timezone.utc).isoformat()}})
+            print(f"[realtime] indices (vnd): {len(idx_rows)} -> {r}")
+        else:
+            raise RuntimeError("vnd_index_snapshot rong hoac lech het")
     except Exception as e:
-        print(f"[realtime] indices error: {e}")
+        print(f"[realtime] indices vnd error: {e} -> fallback VCI (EOD, gan dung ngay)")
+        try:
+            idx_rows = []
+            for sym in ["VNINDEX", "VN30", "HNXIndex", "UPCOMIndex"]:
+                hist = df.vci_index_history(sym, limit=2)
+                if hist:
+                    last = hist[0]  # feed GIAM dan: phan tu dau moi la moi nhat
+                    pct = last.get("pct_change")  # VCI tra dang phan so (0.01 = 1%)
+                    idx_rows.append({
+                        "symbol": sym,
+                        "close": last.get("close"),
+                        "volume": last.get("volume"),
+                        "time": last.get("date"),
+                        "change": last.get("change"),
+                        "pct_change": round(pct * 100, 2) if pct is not None else None,
+                    })
+            if idx_rows:
+                r = publish({"indices": idx_rows,
+                             "_prov": {"source": "direct:vci-fallback", "retrieved_at": datetime.now(timezone.utc).isoformat()}})
+                print(f"[realtime] indices (vci-fallback): {len(idx_rows)} -> {r}")
+        except Exception as e2:
+            print(f"[realtime] indices fallback error: {e2} -> giu nguyen so cu tren R2")
 
     print("[realtime] done.")
 

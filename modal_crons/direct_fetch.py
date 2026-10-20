@@ -101,6 +101,72 @@ def vci_index_history(index: str = "VNINDEX", limit: int = 30) -> list[dict]:
     return out
 
 
+_DCHART = "https://dchart-api.vndirect.com.vn/dchart/history"
+# Chi so app -> ma tren VNDirect dchart (HNX/UPCOM khong co hau to "Index")
+_VND_INDEX_SYMBOLS = [
+    ("VNINDEX", "VNINDEX"),
+    ("VN30", "VN30"),
+    ("HNXIndex", "HNX"),
+    ("UPCOMIndex", "UPCOM"),
+]
+
+
+def vnd_index_snapshot() -> list[dict]:
+    """Snapshot 4 chi so tu VNDirect dchart (feed bieu do truc tiep, cap nhat theo phut).
+
+    2026-10-20: thay vci_index_history cho khau realtime — VCI IQ history la
+    feed EOD (cham 1 ngay, sap xep GIAM dan moi nhat truoc) nen poller boc
+    nham so cua phien cu lam so hom nay. dchart tra nen ngay (resolution=D):
+    nen cuoi = hom nay (close = gia tri hien tai, volume = tong phien),
+    nen truoc = phien hom qua lam moc tinh change.
+    KY THUAT: chi gui User-Agent — gui kem "Accept: application/json" la
+    server tra 406. Loi tung chi so thi bo qua chi so do.
+    Tra ve rows dung contract app: {symbol, close, volume, time, change,
+    pct_change} + prev_close/prev_date de poller doi chieu cheo voi VCI.
+    """
+    from datetime import datetime, timezone, timedelta
+
+    now = int(time.time())
+    frm = now - 10 * 86400
+    out = []
+    for app_sym, dc_sym in _VND_INDEX_SYMBOLS:
+        url = f"{_DCHART}?symbol={dc_sym}&resolution=D&from={frm}&to={now}"
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                raw = resp.read()
+                if "gzip" in resp.headers.get("Content-Encoding", ""):
+                    import gzip
+
+                    raw = gzip.decompress(raw)
+            d = json.loads(raw)
+            ts, cs, vs = d.get("t") or [], d.get("c") or [], d.get("v") or []
+            if len(ts) < 2 or len(cs) < 2:
+                continue
+            vn = timezone(timedelta(hours=7))
+            last_date = datetime.fromtimestamp(ts[-1], vn).date().isoformat()
+            prev_date = datetime.fromtimestamp(ts[-2], vn).date().isoformat()
+            close = float(cs[-1])
+            prev_close = float(cs[-2])
+            chg = round(close - prev_close, 2)
+            pct = round(chg / prev_close * 100, 2) if prev_close else 0
+            out.append(
+                {
+                    "symbol": app_sym,
+                    "close": close,
+                    "volume": float(vs[-1]) if vs else None,
+                    "time": last_date,
+                    "change": chg,
+                    "pct_change": pct,
+                    "prev_close": prev_close,
+                    "prev_date": prev_date,
+                }
+            )
+        except Exception:  # noqa: BLE001 — loi 1 chi so khong duoc lam chet cac chi so con lai
+            continue
+    return out
+
+
 def vci_company(symbol: str) -> dict:
     """Snapshot cong ty: gia hien tai, von hoa... (khong auth)."""
     data = _get(f"{_VCI_IQ}/company/{symbol.upper()}")
