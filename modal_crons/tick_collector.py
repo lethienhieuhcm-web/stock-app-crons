@@ -72,6 +72,11 @@ CONFIG = {
     # Cong khoi dong o Tang A (Modal). SSI = Tang C (chua quyet),
     # VCI = Tang B (OVH/Botkeep) — adapter con trong code, khong chay.
     "sources": ["dnse", "kbs", "vndirect", "vps"],
+    # LAT PRODUCTION: False — DINH CHINH lenh 19:40 21/10: giu ban
+    # da cong chay BONG them vai phien, bao parity tung phien; chi
+    # bat True khi co lenh lat rieng sau (khi do tick_live moi ghi
+    # production, tick_shadow van chay lam doi chieu).
+    "live": False,
     "universe": [
         "VCB", "BID", "CTG", "TCB", "MBB", "VPB", "HPG", "VHM",
         "VIC", "VNM", "MSN", "FPT", "MWG", "SSI", "VND", "HCM",
@@ -1379,6 +1384,7 @@ async def _collect(max_minutes=0):
         return {
             "session_date": start_dt.strftime("%Y-%m-%d"),
             "mode": "multi",
+            "live": CONFIG["live"],
             "sources": per_src,
             "matches_aggregated": agg.matches,
             "symbols_with_candles": len({
@@ -1411,19 +1417,22 @@ async def _collect(max_minutes=0):
             if ci == 0:
                 p = {"tick_shadow": {"status": status,
                                      "foreign": foreign}}
-                live = {"tick_live": {"foreign": flow}}
                 if chunk:
                     p["tick_shadow"]["intraday"] = chunk
-                    live["tick_live"]["intraday"] = chunk
                 await asyncio.to_thread(publish, p, "multi")
-                await asyncio.to_thread(publish, live, "multi")
+                if CONFIG["live"]:
+                    live = {"tick_live": {"foreign": flow}}
+                    if chunk:
+                        live["tick_live"]["intraday"] = chunk
+                    await asyncio.to_thread(publish, live, "multi")
             elif chunk:
                 await asyncio.to_thread(
                     publish, {"tick_shadow": {"intraday": chunk}},
                     "multi")
-                await asyncio.to_thread(
-                    publish, {"tick_live": {"intraday": chunk}},
-                    "multi")
+                if CONFIG["live"]:
+                    await asyncio.to_thread(
+                        publish, {"tick_live": {"intraday": chunk}},
+                        "multi")
         publishes += 1
 
     while not session_over():
