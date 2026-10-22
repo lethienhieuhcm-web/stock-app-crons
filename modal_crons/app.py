@@ -376,7 +376,7 @@ def publish_snapshot():
     if by_symbol:
         try:
             # Contract Worker: {"quotes": {SYM: {...}}} -> market/quotes.json {by_symbol: {...}}
-            result = publish({"quotes": by_symbol, "_prov": _prov("vnstock")})
+            result = publish({"quotes_patch": by_symbol, "_prov": _prov("vnstock")})
             print(f"  quotes: {len(by_symbol)} symbols -> {result}")
             ok_quotes = True
         except Exception as e:
@@ -445,8 +445,15 @@ def realtime_poller():
     symbols = list(dict.fromkeys(symbols))  # dedup
     try:
         board = df.kbs_price_board(symbols)
+        # Gia tri mua/ban NN: bang gia KBS khong co (FO/FR la han muc/room
+        # tinh bang CP — sua goc 21/10/2026) -> lay gia tri that tu VCI.
+        try:
+            vboard = df.vci_symbols(symbols) or {}
+        except Exception:  # noqa: BLE001
+            vboard = {}
         quotes = {}
         for sym, q in board.items():
+            vq = vboard.get(sym) or {}
             quotes[sym] = {
                 "close": q.get("close"),
                 "change": q.get("change"),
@@ -456,18 +463,40 @@ def realtime_poller():
                 "exchange": q.get("exchange"),
                 "bid": q.get("bid"),
                 "ask": q.get("ask"),
-                # Khoi ngoai (KBS tra san FB/FS/FO/FR) — frontend hien "NN mua/ban".
-                # Phai publish o day vi realtime ghi de toan bo quotes.json moi phut.
+                # Khoi ngoai — frontend hien "NN mua/ban". KL tu KBS
+                # (FB/FS), gia tri tu VCI. Phai publish o day vi realtime
+                # ghi de toan bo quotes.json moi phut.
                 "foreign_buy_volume": q.get("foreign_buy_volume"),
                 "foreign_sell_volume": q.get("foreign_sell_volume"),
-                "foreign_buy_value": q.get("foreign_buy_value"),
-                "foreign_sell_value": q.get("foreign_sell_value"),
+                "foreign_buy_value": vq.get("foreign_buy_value"),
+                "foreign_sell_value": vq.get("foreign_sell_value"),
             }
-        r = publish({"quotes": quotes,
+        r = publish({"quotes_patch": quotes,
                      "_prov": {"source": "direct:kbs", "retrieved_at": datetime.now(timezone.utc).isoformat()}})
         print(f"[realtime] quotes: {len(quotes)} -> {r}")
     except Exception as e:
         print(f"[realtime] quotes error: {e}")
+
+    # 1b. [v2 22/10] Do sau 3 buoc TOAN thi truong (moi 5 phut): trang chi tiet cac ma
+    # ngoai vu tru poller chi co quote EOD tu screener (khong bid/ask) —
+    # dien do sau that tu bang KBS (1 call lon nhu luong screener) theo
+    # tien le FR/FO: nguon chinh thieu thi router/publish dien tu nguon
+    # co that. Sua goc 22/10/2026 (lenh Henrry: bid/ask NaN + thieu do sau).
+    if vn_now.minute % 5 == 0:
+        try:
+            listing = df.vnd_listing() or []
+            all_syms = [x["symbol"] for x in listing if x.get("symbol")]
+            full = df.kbs_price_board(all_syms)
+            depth = {}
+            for sym, q in full.items():
+                if q.get("bid") or q.get("ask"):
+                    depth[sym] = {"bid": q.get("bid"), "ask": q.get("ask")}
+            r = publish({"depth": depth,
+                         "_prov": {"source": "direct:kbs-board-full",
+                                   "retrieved_at": datetime.now(timezone.utc).isoformat()}})
+            print(f"[realtime] depth: {len(depth)}/{len(all_syms)} -> {r}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[realtime] depth error: {e}")
 
     # 2. Chi so: nguon chinh VNDirect dchart (truc tiep), doi chieu cheo VCI.
     # 2026-10-20: bo vci_index_history lam nguon chinh — feed EOD cham 1 ngay

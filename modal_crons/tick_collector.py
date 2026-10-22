@@ -34,6 +34,22 @@ Dau ra:
 
 Ky luat: dung 1 ket noi/cong, PINGREQ keepalive 25s (broker dong
 ket noi neu client im lang 2-3 phut — bai hoc probe 20/10).
+
+THIET KE TONG THE BO THU (Chot Henrry 20:05 22/10, tai lieu
+tick-collector-overall-design-2026-10-22) — DOT 1 (nen truong &
+cong), ap tu ban fixed vong sua parity (ghi chu thiet ke
+tick-multi-design-notes-2026-10-22): (1) FIELD_MAP khai bao mapping
++ co kiem chung ngu nghia; cong hop le hai lop — TAI ADAPTER
+(gate_snap_fields, lop 1) va tai Aggregator.on_snapshot (lop 2):
+sentinel/khoang vat ly -> None, publish bo truong; truc doi chieu
+snapshot-vs-tick-tu-gom ngay trong phien. (2) Dedup tick theo dinh
+danh acc (thay watermark don dieu), dem tick trung/lui/muon vao
+status; chinh sach muon 120s (restate/late_deep); dedup state duoc
+checkpoint vao status moi chu ky publish. (3) Close/open nen theo
+ts SU KIEN (tick som/muon nhat trong phut), khong theo thu tu den.
+(4) Luot publish dong phien kem khoi "diag" (snapshot theo nguon,
+tick totals, volume phut theo nguon, tong thoa thuan) cho
+reconcile dinh danh truong. Van chay bong, live=False.
 """
 import modal
 
@@ -60,7 +76,9 @@ def main(max_minutes: int = 0):
 # =====================================================================
 # Collector (chay ben trong Modal function)
 # =====================================================================
-import asyncio, json, os, random, struct, time, urllib.request
+import asyncio, base64, gzip, json, os, random, struct, time
+import urllib.parse, urllib.request
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 
 ICT = timezone(timedelta(hours=7))
@@ -77,6 +95,10 @@ CONFIG = {
     # bat True khi co lenh lat rieng sau (khi do tick_live moi ghi
     # production, tick_shadow van chay lam doi chieu).
     "live": False,
+    # Resume giua phien (Dot 2): khoi dong lai -> nap checkpoint +
+    # artifact theo nguon cua CHINH phien hom nay tu R2; loi/thieu
+    # thi bat dau trang nhu cu, khong chan phien.
+    "resume": True,
     "universe": [
         "VCB", "BID", "CTG", "TCB", "MBB", "VPB", "HPG", "VHM",
         "VIC", "VNM", "MSN", "FPT", "MWG", "SSI", "VND", "HCM",
@@ -88,6 +110,133 @@ CONFIG = {
 
 # Uu tien hop nhat (cao -> thap)
 SRC_PRIORITY = ["dnse", "kbs", "vndirect", "vps", "vci", "ssi-mqtt"]
+
+# ---------------- Bang mapping truong snapshot (khai bao) ----------------
+# Mau FieldMapper cua vnstock (core/utils/field/): mapping theo nguon
+# khai bao mot cho kem CO KIEM CHUNG NGU NGHIA. verified=True chi khi
+# da doi chieu bang so that (request that / parity sach). verified=
+# False = chua kiem chung: truong van thu thap de DO, nhung khong
+# duoc coi la so that khi phan tich. Cap vat ly + cong sentinel o
+# _gate_value (2 lop: gate_snap_fields tai adapter + Aggregator).
+FIELD_MAP = {
+    "dnse": {
+        "total_volume": ("stockinfo f22", 10, False),   # dinh danh lai
+        "total_value": ("stockinfo f25", 10**9, False),
+        "buy_volume": ("stockinfo f17", 10, True),
+        "buy_value": ("stockinfo f58", 10**9, True),
+        "sell_volume": ("stockinfo f18", 10, True),
+        "sell_value": ("stockinfo f59", 10**9, True),
+        "room": ("stockinfo f20", 10, False),           # sentinel GVR
+        "total_room": ("stockinfo f60", 10, False),
+        "last": ("stockinfo f13", 1, True),
+    },
+    "ssi-mqtt": {
+        "total_volume": ("snapshot nmTotalTradedQty", 1, False),
+        "total_value": ("snapshot nmTotalTradedValue", 1, False),
+        "buy_volume": ("snapshot buyForeignQtty", 1, True),
+        "buy_value": ("snapshot buyForeignValue", 1, True),
+        "sell_volume": ("snapshot sellForeignQtty", 1, True),
+        "sell_value": ("snapshot sellForeignValue", 1, True),
+        "room": ("snapshot remainForeignQtty", 1, False),
+        "last": ("snapshot matchedPrice/1000", 1, True),
+    },
+    "kbs": {
+        "total_volume": ("STOCK TT", 1, True),
+        "total_value": ("STOCK TV", 1, True),
+        "buy_volume": ("STOCK FB", 1, True),
+        "sell_volume": ("STOCK FS", 1, True),
+        "room": ("STOCK FR", 1, True),
+        "total_room": ("STOCK FO", 1, True),
+        "last": ("STOCK CP/1000", 1, True),
+    },
+    "vndirect": {
+        "total_volume": ("SMA field9", 10, True),
+        "total_value": ("SMA field8", 10**6, True),
+        "buy_volume": ("SMA field4", 10, True),
+        "sell_volume": ("SMA field5", 10, True),
+        "room": ("SMA field15", 10, True),
+        "total_room": ("SMA field14", 10, True),
+        "last": ("SMA field10", 1, True),
+    },
+    "vps": {
+        "total_volume": ("stock 3220 totalVol", 10, True),
+        "buy_volume": ("board 3250 fBVol", 10, True),
+        "sell_volume": ("board 3250 fSVolume", 10, True),
+        "buy_value": ("board 3250 fBValue", 1000, True),
+        "sell_value": ("board 3250 fSValue", 1000, True),
+        "room": ("board 3250 fRoom", 10, True),
+        "last": ("stock 3220 lastPrice", 1, True),
+    },
+    "vci": {
+        "total_volume": ("match accumulatedVolume", 1, True),
+        "total_value": ("match accumulatedValue", 1, True),
+        "buy_volume": ("match foreignBuyVolume", 1, True),
+        "buy_value": ("match foreignBuyValue", 1, True),
+        "sell_volume": ("match foreignSellVolume", 1, True),
+        "sell_value": ("match foreignSellValue", 1, True),
+        "room": ("match currentRoom", 1, True),
+        "total_room": ("match totalRoom", 1, True),
+        "last": ("match matchPrice", 1, True),
+    },
+}
+
+# Truong so luong phai qua cong hop le (don vi CP/dong sau scale)
+QTY_FIELDS = ("total_volume", "total_value", "buy_volume", "buy_value",
+              "sell_volume", "sell_value", "room", "total_room")
+# Chan tren tuyet doi: vuot = sentinel/thieu du lieu (vd 2^64 qua
+# float). 2^62 du lon cho moi KL/GD hop le cua 1 ma trong 1 phien.
+ABSURD_CAP = 2 ** 62
+# Nguong tick muon (thiet ke 3.4, Chot 20:05 22/10): tick den sau
+# watermark cua nguon <= 120s -> restate phut; > 120s -> late_deep.
+LATE_DEEP_SEC = 120
+
+
+def _gate_value(src, key, v, room_cap, stats):
+    """Luat cong hop le dung chung cho ca 2 lop (mau sentinel
+    QuestDB/FIX SBE/ITCH + khoang hop le vat ly): NaN/inf/am/vuot
+    ABSURD_CAP -> None + dem 'sentinel'; room > room_cap -> None +
+    dem 'range'. Gia tri nguyen tra ve dang int (khong qua float).
+    stats: dict dem theo nguon (Aggregator.gate_stats)."""
+    if v is None:
+        return None
+    try:
+        fv = float(v)
+    except (TypeError, ValueError):
+        return None
+    st = stats.setdefault(src, {"sentinel": 0, "range": 0})
+    if fv != fv or fv in (float("inf"), float("-inf")) \
+            or fv < 0 or abs(fv) >= ABSURD_CAP:
+        st["sentinel"] += 1
+        return None
+    out = int(fv) if fv == int(fv) else fv
+    if key == "room" and room_cap is not None and out > room_cap:
+        st["range"] += 1
+        return None
+    return out
+
+
+def gate_snap_fields(src, snap, stats):
+    """Cong hop le LOP 1 — TAI ADAPTER (thiet ke tong the, muc 3.5):
+    adapter ap len dict snapshot TRUOC khi dua vao Aggregator, de
+    gia tri hong khong bao gio cham state. Lop 2 o
+    Aggregator.on_snapshot chay lai cung luat (cong them kiem tra
+    room theo total_room tich luy khi snapshot thieu cap). room_cap
+    o lop 1 chi lay tu CHINH snapshot (adapter khong giu state);
+    truong bi loai o lop 1 khong bi dem lai o lop 2."""
+    cap = snap.get("total_room")
+    if cap is not None:
+        cap = _gate_value(src, "total_room", cap, None, stats)
+    out = {}
+    for k, v in snap.items():
+        if v is None:
+            continue
+        if k in QTY_FIELDS:
+            v = _gate_value(src, k, v,
+                            cap if k == "room" else None, stats)
+            if v is None:
+                continue
+        out[k] = v
+    return out
 
 
 def now_ict() -> datetime:
@@ -505,7 +654,8 @@ class SsiAdapter:
                 d = pb_decode(payload, SSI_STOCK)
                 sym = d.get("stockSymbol") or topic.split("/")[1]
                 if d.get("matchedPrice"):
-                    self.agg.on_snapshot(self.name, sym, {
+                    self.agg.on_snapshot(self.name, sym,
+                        gate_snap_fields(self.name, {
                         "last": d["matchedPrice"] / 1000,
                         "total_volume": d.get("nmTotalTradedQty"),
                         "total_value": d.get("nmTotalTradedValue"),
@@ -514,7 +664,7 @@ class SsiAdapter:
                         "sell_volume": d.get("sellForeignQtty"),
                         "sell_value": d.get("sellForeignValue"),
                         "room": d.get("remainForeignQtty"),
-                    })
+                        }, self.agg.gate_stats))
             elif topic.startswith("l/"):
                 sym = topic.split("/")[1]
                 d = pb_decode(payload, SSI_LE)
@@ -529,7 +679,10 @@ class SsiAdapter:
                 d = pb_decode(payload, SSI_PE)
                 for it in d.get("items", []):
                     if it.get("stockSymbol"):
-                        self.agg.on_put(self.name, it["stockSymbol"], it)
+                        self.agg.on_put(
+                            self.name, it["stockSymbol"], it,
+                            session_epoch(now_ict(),
+                                          it.get("time", "")))
         except Exception as e:  # noqa: BLE001
             print(f"[ssi] decode loi {topic}: {str(e)[:100]}",
                   flush=True)
@@ -599,7 +752,8 @@ class DnseAdapter:
                 sym = self._num(m, "f4")
                 if not isinstance(sym, str):
                     sym = topic.rsplit("/", 1)[-1]
-                self.agg.on_snapshot(self.name, sym, {
+                self.agg.on_snapshot(self.name, sym,
+                    gate_snap_fields(self.name, {
                     "last": self._num(m, "f13"),
                     "total_volume": self._num(m, "f22", 10),
                     "total_value": self._num(m, "f25", 10**9),
@@ -609,7 +763,7 @@ class DnseAdapter:
                     "sell_value": self._num(m, "f59", 10**9),
                     "room": self._num(m, "f20", 10),
                     "total_room": self._num(m, "f60", 10),
-                })
+                    }, self.agg.gate_stats))
             elif "/tick/" in topic:
                 m = self._inner(d, "f45")
                 sym = topic.rsplit("/", 1)[-1]
@@ -689,7 +843,8 @@ class KbsAdapter:
             d = json.loads(body)
             if typ == "STOCK":
                 cp = _f(d.get("CP"))
-                self.agg.on_snapshot(self.name, sym, {
+                self.agg.on_snapshot(self.name, sym,
+                    gate_snap_fields(self.name, {
                     "last": cp / 1000 if cp else None,
                     "total_volume": _f(d.get("TT")),
                     "total_value": _f(d.get("TV")),
@@ -697,7 +852,7 @@ class KbsAdapter:
                     "sell_volume": _f(d.get("FS")),
                     "room": _f(d.get("FR")),
                     "total_room": _f(d.get("FO")),
-                })
+                    }, self.agg.gate_stats))
             elif typ == "TRADE":
                 price = _f(d.get("FMP"))
                 vol = _f(d.get("FV"))
@@ -810,7 +965,10 @@ class VndirectAdapter:
         self.connected = False
         self.last_error = ""
         self._stop = False
-        self._seen_ticks = set()  # dedupe ST (khong co accumulated)
+        self._seen_ticks = OrderedDict()  # dedupe ST (khong co
+        # accumulated): khoa dinh danh tick cua nguon nay la
+        # (sym, gio, gia, KL, truong phu); LRU 65536 nhu Aggregator
+        # de khong phinh vo han giua phien dai.
 
     async def run(self):
         from websockets.asyncio.client import connect
@@ -897,14 +1055,17 @@ class VndirectAdapter:
                    parts[6] if len(parts) > 6 else "")
             if key in self._seen_ticks:
                 return
-            self._seen_ticks.add(key)
+            self._seen_ticks[key] = None
+            if len(self._seen_ticks) > 65536:
+                self._seen_ticks.popitem(last=False)
             self.agg.on_match(
                 self.name, sym, session_epoch(now_ict(), parts[2]),
                 price, vol * 10, None)
         elif kind == "SMA" and len(parts) >= 16:
             sym = parts[1]
             tv = _f(parts[8])
-            self.agg.on_snapshot(self.name, sym, {
+            self.agg.on_snapshot(self.name, sym,
+                gate_snap_fields(self.name, {
                 "last": _f(parts[10]),
                 "total_volume": (_f(parts[9]) or 0) * 10
                 if _f(parts[9]) is not None else None,
@@ -917,7 +1078,7 @@ class VndirectAdapter:
                 if _f(parts[15]) is not None else None,
                 "total_room": (_f(parts[14]) or 0) * 10
                 if _f(parts[14]) is not None else None,
-            })
+                }, self.agg.gate_stats))
 
 
 # ---------------- VPS (chan bonus: 3250 ngoai + 3220 tick + tong hop) ----
@@ -973,11 +1134,12 @@ class VpsAdapter:
                 sym = d["sym"]
                 last = _f(d.get("lastPrice"))
                 tvol = _f(d.get("totalVol"))
-                self.agg.on_snapshot(self.name, sym, {
+                self.agg.on_snapshot(self.name, sym,
+                    gate_snap_fields(self.name, {
                     "last": last,
                     "total_volume": tvol * 10
                     if tvol is not None else None,
-                })
+                    }, self.agg.gate_stats))
                 lvol = _f(d.get("lastVol"))
                 if last and lvol:
                     self.agg.on_match(
@@ -993,7 +1155,8 @@ class VpsAdapter:
                 bv, sv = _f(d.get("fBVol")), _f(d.get("fSVolume"))
                 bval, sval = _f(d.get("fBValue")), _f(d.get("fSValue"))
                 room = _f(d.get("fRoom"))
-                self.agg.on_snapshot(self.name, d["symbol"], {
+                self.agg.on_snapshot(self.name, d["symbol"],
+                    gate_snap_fields(self.name, {
                     "buy_volume": bv * 10 if bv is not None else None,
                     "sell_volume": sv * 10 if sv is not None else None,
                     "buy_value": bval * 1000
@@ -1001,7 +1164,7 @@ class VpsAdapter:
                     "sell_value": sval * 1000
                     if sval is not None else None,
                     "room": room * 10 if room is not None else None,
-                })
+                    }, self.agg.gate_stats))
             elif event in ("aggregatemarket", "aggregateforeignmarket",
                            "aggregateps", "aggregatecw", "aggregateetf"):
                 self.agg.on_aggregate(event, payload)
@@ -1109,7 +1272,8 @@ class VciAdapter:
         self.last_msg = time.time()
         self.msgs += 1
         if d.get("foreignBuyVolume") is not None:
-            self.agg.on_snapshot(self.name, sym, {
+            self.agg.on_snapshot(self.name, sym,
+                gate_snap_fields(self.name, {
                 "last": d.get("matchPrice"),
                 "total_volume": d.get("accumulatedVolume"),
                 "total_value": d.get("accumulatedValue"),
@@ -1119,7 +1283,7 @@ class VciAdapter:
                 "sell_value": d.get("foreignSellValue"),
                 "room": d.get("currentRoom"),
                 "total_room": d.get("totalRoom"),
-            })
+                }, self.agg.gate_stats))
         if d.get("matchPrice") and d.get("matchVol"):
             ts = session_epoch(now_ict(), d.get("time", "")) \
                 if d.get("time") else time.time()
@@ -1140,51 +1304,166 @@ class Aggregator:
     - Doi chieu cheo: so sanh snapshot cac cong voi cong chinh."""
 
     def __init__(self):
-        self.candles = {}       # src -> sym -> {minute: [o,h,l,c,v]}
+        self.candles = {}       # src -> sym -> {minute: [o,h,l,c,v,
+                                #  first_ts, last_ts]}
+        # Lop volume THOA THUAN theo phut (thiet ke 3.4 — bucket
+        # mang 2 lop rieng v / v_pt, khong bao gio cong vao v):
+        # src -> sym -> {minute: tong vol thoa thuan}.
+        self.candles_pt = {}
         self.foreign = {}       # src -> sym -> snapshot moi nhat
         self.put_foreign = {}   # sym -> cong don thoa thuan (SSI, neu co)
         self.aggregates = {}    # ten event VPS -> payload raw moi nhat
         self.agg_counts = {}    # ten event VPS -> so tin
-        self._last_acc = {}     # (src, sym) -> accumulatedVol da xu ly
+        # Dedup theo DINH DANH tick (acc cua tung tick) thay cho
+        # watermark don dieu (sua parity 22/10 loi 3b): tap acc da
+        # thay theo (src, sym), gioi han 65536 muc LRU.
+        self._seen_acc = {}     # (src, sym) -> OrderedDict[acc, None]
+        self._max_acc = {}      # (src, sym) -> acc lon nhat da thay
+        self._max_minute = {}   # (src, sym) -> phut lon nhat da thay
+        self._wm = {}           # (src, sym) -> ts su kien lon nhat
+                                # (watermark cho chinh sach muon 3.4)
+        self._restated = {}     # (src, sym) -> set phut da restate
+        # Bo dem do (publish vao status): tick trung bi bo, tick
+        # acc lui (that, den muon), tick muon; cong sentinel/range.
+        self.tick_stats = {}    # src -> {dup_dropped, acc_regressed,
+                                #  late, late_deep, restated_minutes}
+        self.gate_stats = {}    # src -> {sentinel, range}
         self.matches_by_src = {}
         self.dirty = set()
+        self.dirty_pt = set()   # ma co du lieu thoa thuan moi (Dot 2)
         self.matches = 0
+        # Raw store (Dot 2): moi tick di qua on_match/on_put deu ghi
+        # 1 dong raw TRUOC khi dedup — drain moi chu ky publish.
+        self.raw_buf = []
 
     def on_match(self, src, sym, ts, price, vol, acc):
+        # Raw (Dot 2): [src, sym, ts_event, ts_recv, price, vol, acc]
+        # — ghi truoc dedup de phat lai trung khop phien live.
+        self.raw_buf.append([src, sym, ts, round(time.time(), 3),
+                             price, vol, acc])
         key = (src, sym)
+        st = self.tick_stats.setdefault(
+            src, {"dup_dropped": 0, "acc_regressed": 0, "late": 0,
+                  "late_deep": 0, "restated_minutes": 0})
         if acc is not None:
-            if acc <= self._last_acc.get(key, -1):
-                return  # ban ghi lap (reconnect replay)
-            self._last_acc[key] = acc
+            seen = self._seen_acc.setdefault(key, OrderedDict())
+            if acc in seen:
+                st["dup_dropped"] += 1
+                return  # trung lap (reconnect replay) — dinh danh acc
+            seen[acc] = None
+            if len(seen) > 65536:
+                seen.popitem(last=False)
+            hi = self._max_acc.get(key)
+            if hi is not None and acc < hi:
+                # Tick THAT den muon (acc khong don dieu): van xu ly,
+                # chi dem de do — watermark cu bo im lang tick nay.
+                st["acc_regressed"] += 1
+            if hi is None or acc > hi:
+                self._max_acc[key] = acc
         minute = int(ts // 60 * 60)
+        mk = self._max_minute.get(key)
+        if mk is not None and minute < mk:
+            st["late"] += 1
+        if mk is None or minute > mk:
+            self._max_minute[key] = minute
+        # Chinh sach muon 120s (thiet ke 3.4): watermark = ts su
+        # kien lon nhat da thay cua (src, sym). Tick den sau
+        # watermark: lech <= 120s -> van vao dung bucket event-time,
+        # phut do bi restate o luot publish ke (dem phut restate);
+        # lech > 120s -> van vao bucket, dem rieng late_deep.
+        # Khong tick nao bi bo im lang.
+        wm = self._wm.get(key)
+        if wm is not None and ts < wm:
+            if wm - ts > LATE_DEEP_SEC:
+                st["late_deep"] += 1
+            else:
+                rs = self._restated.setdefault(key, set())
+                if minute not in rs:
+                    rs.add(minute)
+                    st["restated_minutes"] += 1
+        if wm is None or ts > wm:
+            self._wm[key] = ts
         per = self.candles.setdefault(src, {}).setdefault(sym, {})
         b = per.get(minute)
         if b is None:
-            per[minute] = [price, price, price, price, vol]
+            per[minute] = [price, price, price, price, vol, ts, ts]
         else:
             b[1] = max(b[1], price)
             b[2] = min(b[2], price)
-            b[3] = price
+            if ts >= b[6]:
+                # Close = gia cua tick co ts SU KIEN lon nhat trong
+                # phut (khong phai tick den sau cung) — sua loi 3d.
+                b[3] = price
+                b[6] = ts
+            if ts < b[5]:
+                b[0] = price
+                b[5] = ts
             b[4] += vol
         self.dirty.add(sym)
         self.matches += 1
         self.matches_by_src[src] = self.matches_by_src.get(src, 0) + 1
 
+    def _gate_qty(self, src, key, v, room_cap=None):
+        """Cong hop le LOP 2 — tai Aggregator (tuyen phong thu sau
+        cong tai adapter): cung luat _gate_value, dem vao gate_stats
+        chung; room_cap co the lay tu state tich luy khi snapshot
+        thieu total_room."""
+        return _gate_value(src, key, v, room_cap, self.gate_stats)
+
     def on_snapshot(self, src, sym, snap):
+        # MOI snapshot cua MOI adapter deu qua cua nay (cong LOP 2 —
+        # adapter da ap gate_snap_fields o lop 1 khi phat). Truong so
+        # luong hong -> coi nhu thieu (None), khong ghi de, khong
+        # thang merge; publish bo truong (missing_policy='na').
         cur = self.foreign.setdefault(src, {}).setdefault(sym, {})
+        room_cap = snap.get("total_room")
+        if room_cap is None:
+            room_cap = cur.get("total_room")
+        if room_cap is not None:
+            room_cap = self._gate_qty(src, "total_room", room_cap)
         for k, v in snap.items():
-            if v is not None:
-                cur[k] = v
+            if v is None:
+                continue
+            if k in QTY_FIELDS:
+                v = self._gate_qty(src, k, v, room_cap)
+                if v is None:
+                    continue
+            cur[k] = v
         cur["src"] = src
 
-    def on_put(self, src, sym, it):
+    def on_put(self, src, sym, it, ts=None):
+        # ts = ts su kien cua deal (SSI pe co truong time); thieu
+        # thi dung gio nhan. Raw (Dot 2): [src, sym, ts_event,
+        # ts_recv, "PUT", {truong rut gon on_put dung}] — phat lai
+        # truyen lai ts tu raw nen bucket thoa thuan trung khop.
+        ts_ev = ts if ts is not None else time.time()
+        self.raw_buf.append([src, sym, ts_ev, round(time.time(), 3),
+                             "PUT", {k: it.get(k) for k in (
+                                 "vol", "val", "buyForeignQtty",
+                                 "buyForeignValue", "sellForeignQtty",
+                                 "sellForeignValue")}])
+        # v_pt theo phut (thiet ke 3.4): cong vol thoa thuan vao
+        # bucket phut cua CHINH nguon nay — lop rieng, merger Dot 3
+        # quyet dinh ghep, khong cong vao v o day.
+        pvol = it.get("vol") or 0
+        if pvol:
+            minute = int(ts_ev // 60 * 60)
+            per = self.candles_pt.setdefault(src, {}) \
+                .setdefault(sym, {})
+            per[minute] = per.get(minute, 0) + pvol
+            self.dirty_pt.add(sym)
         cur = self.put_foreign.setdefault(sym, {
             "put_buy_volume": 0, "put_buy_value": 0,
-            "put_sell_volume": 0, "put_sell_value": 0, "put_deals": 0})
+            "put_sell_volume": 0, "put_sell_value": 0, "put_deals": 0,
+            "put_total_volume": 0, "put_total_value": 0})
         cur["put_buy_volume"] += it.get("buyForeignQtty") or 0
         cur["put_buy_value"] += it.get("buyForeignValue") or 0
         cur["put_sell_volume"] += it.get("sellForeignQtty") or 0
         cur["put_sell_value"] += it.get("sellForeignValue") or 0
+        # Tong thoa thuan (ke ca noi dia): ung vien dinh danh loi 1
+        # va do phan dinh loi 3a.
+        cur["put_total_volume"] += it.get("vol") or 0
+        cur["put_total_value"] += it.get("val") or 0
         cur["put_deals"] += 1
         cur["src"] = src
 
@@ -1321,6 +1600,214 @@ class Aggregator:
             out[f"{src}_vs_{primary}"] = stat
         return out
 
+    def snapshot_vs_ticks(self):
+        """Truc doi chieu MOI (sua loi 1, mau ExactPro): snapshot
+        total_volume cua TUNG cong vs tong tick tu gom cua CHINH
+        cong do. Chay ngay trong phien (moi luot publish) — truong
+        snapshot sai ngu nghia lo ra o day thay vi cho parity cuoi
+        ngay. worst: 5 ma lech lon nhat kem ca 2 gia tri de dinh
+        danh ngu nghia truong."""
+        out = {}
+        for src, syms in self.foreign.items():
+            stat = {"compared": 0, "exact": 0, "within10": 0,
+                    "max_abs_diff": 0, "worst": []}
+            worst = []
+            for sym, snap in syms.items():
+                tv = snap.get("total_volume")
+                if tv is None:
+                    continue
+                tick_sum = sum(
+                    b[4] for b in self.candles.get(
+                        src, {}).get(sym, {}).values())
+                if not tick_sum:
+                    continue
+                stat["compared"] += 1
+                d = abs(tv - tick_sum)
+                if d == 0:
+                    stat["exact"] += 1
+                if d <= 10:
+                    stat["within10"] += 1
+                stat["max_abs_diff"] = max(stat["max_abs_diff"], d)
+                worst.append({"sym": sym, "snapshot": tv,
+                              "tick_sum": tick_sum,
+                              "diff": tv - tick_sum})
+            worst.sort(key=lambda w: -abs(w["diff"]))
+            stat["worst"] = worst[:5]
+            out[src] = stat
+        return out
+
+    def build_diag(self):
+        """Du lieu DO dong phien (chi publish o luot closed=True):
+        snapshot theo TUNG nguon (chua hop nhat) + tong tick theo
+        nguon + volume theo phut theo nguon + tong thoa thuan —
+        dau vao cho dinh danh truong loi 1 va phan dinh loi 3 o
+        buoc reconcile ngoai tuyen."""
+        mv = {}
+        for src, syms in self.candles.items():
+            for sym, per in syms.items():
+                slot = mv.setdefault(sym, {})
+                for minute, b in per.items():
+                    k = datetime.fromtimestamp(minute, ICT).strftime(
+                        "%Y-%m-%dT%H:%M")
+                    slot.setdefault(k, {})[src] = b[4]
+        mp = {}
+        for src, syms in self.candles_pt.items():
+            for sym, per in syms.items():
+                slot = mp.setdefault(sym, {})
+                for minute, vpt in per.items():
+                    k = datetime.fromtimestamp(minute, ICT).strftime(
+                        "%Y-%m-%dT%H:%M")
+                    slot.setdefault(k, {})[src] = vpt
+        return {
+            "foreign_by_src": self.foreign,
+            "tick_totals": {
+                src: {sym: sum(b[4] for b in per.values())
+                      for sym, per in syms.items()}
+                for src, syms in self.candles.items()},
+            "minute_vol_by_src": mv,
+            "minute_put_by_src": mp,
+            "put_totals": self.put_foreign,
+        }
+
+    def checkpoint(self):
+        """Checkpoint state dedup + bo dem (thiet ke 3.5/5 — state
+        khong song trong tien trinh): ghi vao status moi chu ky
+        publish. Gom max_acc/max_minute/watermark theo (src, sym),
+        duoi tap acc da thay (64 acc gan nhat moi khoa — du hap thu
+        replay khi noi lai/restart), tap phut restate, tick_stats/
+        gate_stats va tong matches. NEN + snapshot khoi ngoai khong
+        nam o day: resume day du (dung lai ca nen tu artifact) la
+        pham vi Dot 2."""
+        def k2(k):
+            return k[0] + "|" + k[1]
+        return {
+            "max_acc": {k2(k): v for k, v in self._max_acc.items()},
+            "max_minute": {k2(k): v
+                           for k, v in self._max_minute.items()},
+            "wm": {k2(k): v for k, v in self._wm.items()},
+            "seen_tail": {k2(k): list(od.keys())[-64:]
+                          for k, od in self._seen_acc.items()},
+            "restated": {k2(k): sorted(s)
+                         for k, s in self._restated.items()},
+            "tick_stats": self.tick_stats,
+            "gate_stats": self.gate_stats,
+            "matches": self.matches,
+            "matches_by_src": self.matches_by_src,
+        }
+
+    def restore_checkpoint(self, cp):
+        """Nap lai state dedup + bo dem tu checkpoint() (dung khi
+        khoi dong lai giua phien — duong doc artifact ve la Dot 2).
+        Chi khoi phuc dedup/dem; nen va snapshot duoc dung lai tu
+        artifact cung Dot 2."""
+        if not cp:
+            return
+
+        def k1(s):
+            src, _, sym = s.partition("|")
+            return (src, sym)
+        self._max_acc = {k1(k): v
+                         for k, v in (cp.get("max_acc") or {}).items()}
+        self._max_minute = {
+            k1(k): v for k, v in (cp.get("max_minute") or {}).items()}
+        self._wm = {k1(k): v for k, v in (cp.get("wm") or {}).items()}
+        self._seen_acc = {}
+        for k, tail in (cp.get("seen_tail") or {}).items():
+            od = OrderedDict()
+            for a in tail:
+                od[a] = None
+            self._seen_acc[k1(k)] = od
+        self._restated = {k1(k): set(v) for k, v in
+                          (cp.get("restated") or {}).items()}
+        self.tick_stats = cp.get("tick_stats") or {}
+        self.gate_stats = cp.get("gate_stats") or {}
+        self.matches = cp.get("matches") or 0
+        self.matches_by_src = cp.get("matches_by_src") or {}
+
+    def drain_raw(self):
+        """Lay toan bo raw da ghi tu lan drain truoc (Dot 2)."""
+        buf, self.raw_buf = self.raw_buf, []
+        return buf
+
+    def export_src_state(self):
+        """Trang thai theo nguon -> artifact (Dot 2): buckets dang
+        noi bo day du [o,h,l,c,v,fts,lts] theo khoa phut ISO kem
+        snapshot khoi ngoai theo nguon. Copy nong tung muc de an
+        toan khi publish chay o thread rieng."""
+        out = {}
+        for src, syms in self.candles.items():
+            bk = {}
+            for sym, per in syms.items():
+                bk[sym] = {
+                    datetime.fromtimestamp(m, ICT).strftime(
+                        "%Y-%m-%dT%H:%M"): list(b)
+                    for m, b in per.items()}
+            out[src] = {"buckets": bk}
+        for src, syms in self.candles_pt.items():
+            pt = {}
+            for sym, per in syms.items():
+                pt[sym] = {
+                    datetime.fromtimestamp(m, ICT).strftime(
+                        "%Y-%m-%dT%H:%M"): v
+                    for m, v in per.items()}
+            out.setdefault(src, {})["buckets_pt"] = pt
+        for src, syms in self.foreign.items():
+            out.setdefault(src, {})["snapshot"] = {
+                s: dict(v) for s, v in syms.items()}
+        return out
+
+    def import_src_state(self, state, only_day=None):
+        """Nap artifact theo nguon (resume Dot 2): buckets ->
+        candles, buckets_pt -> candles_pt, snapshot -> foreign.
+        Khoa phut ISO -> epoch giay ICT. only_day='YYYY-MM-DD':
+        chi nap phut cua ngay do (artifact buckets.json tich luy
+        nhieu phien — khong loc se keo nen phien cu vao phien
+        moi). Loi o 1 nguon khong chan cac nguon con lai: moi
+        nguon/muc duoc boc try rieng, bucket sai dinh dang bi bo."""
+        for src, part in (state or {}).items():
+            try:
+                bk = (part or {}).get("buckets") or {}
+                dst = self.candles.setdefault(src, {})
+                for sym, per in bk.items():
+                    d2 = dst.setdefault(sym, {})
+                    for k, b in per.items():
+                        if only_day and not k.startswith(only_day):
+                            continue
+                        if not isinstance(b, (list, tuple)) \
+                                or len(b) != 7:
+                            continue
+                        try:
+                            dt = datetime.strptime(
+                                k, "%Y-%m-%dT%H:%M")
+                        except (ValueError, TypeError):
+                            continue
+                        epoch = int(dt.replace(tzinfo=ICT)
+                                    .timestamp())
+                        d2[epoch] = list(b)
+                pt = (part or {}).get("buckets_pt") or {}
+                dstp = self.candles_pt.setdefault(src, {})
+                for sym, per in pt.items():
+                    dp = dstp.setdefault(sym, {})
+                    for k, v in per.items():
+                        if only_day and not k.startswith(only_day):
+                            continue
+                        if not isinstance(v, (int, float)):
+                            continue
+                        try:
+                            dt = datetime.strptime(
+                                k, "%Y-%m-%dT%H:%M")
+                        except (ValueError, TypeError):
+                            continue
+                        epoch = int(dt.replace(tzinfo=ICT)
+                                    .timestamp())
+                        dp[epoch] = v
+                snap = (part or {}).get("snapshot") or {}
+                if snap:
+                    self.foreign[src] = {s: dict(v)
+                                         for s, v in snap.items()}
+            except Exception:  # noqa: BLE001 — 1 nguon hong khong
+                continue           # chan resume cac nguon con lai
+
 
 # ---------------- Publish ----------------
 
@@ -1339,6 +1826,23 @@ def publish(payload, source):
         return json.loads(r.read().decode())
 
 
+def fetch_tick_state(key=None):
+    """Doc artifact shadow_tick tu Worker (route noi bo, secret) —
+    phuc vu resume Dot 2. key=None -> status.json; key dang
+    'src/<src>/buckets.json' tuong doi duoi market/shadow_tick/.
+    Loi -> raise (noi goi tu quyet dinh bat dau trang)."""
+    secret = os.environ["STOCK_PUBLISH" "_SECRET"]
+    url = "https://lethanhdong.one/api/internal/tick-state"
+    if key:
+        url += "?key=" + urllib.parse.quote(key, safe="")
+    req = urllib.request.Request(url, method="GET")
+    req.add_header("X-Publish-Secret", secret)
+    req.add_header("X-Internal-Secret", secret)
+    req.add_header("User-Agent", "Mozilla/5.0")
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode())
+
+
 # ---------------- Dieu phoi da cong ----------------
 
 ADAPTERS = {"dnse": DnseAdapter, "kbs": KbsAdapter,
@@ -1351,6 +1855,34 @@ async def _collect(max_minutes=0):
     agg = Aggregator()
     started = time.time()
     start_dt = now_ict()
+    if CONFIG.get("resume"):
+        # Resume Dot 2: nap checkpoint + artifact theo nguon cua
+        # CHINH phien hom nay; bat ky loi nao -> bat dau trang.
+        try:
+            st = await asyncio.to_thread(fetch_tick_state)
+            if st and st.get("session_date") == \
+                    start_dt.strftime("%Y-%m-%d") \
+                    and st.get("checkpoint"):
+                agg.restore_checkpoint(st["checkpoint"])
+                state = {}
+                for name in CONFIG["sources"]:
+                    bk = await asyncio.to_thread(
+                        fetch_tick_state, f"src/{name}/buckets.json")
+                    sn = await asyncio.to_thread(
+                        fetch_tick_state, f"src/{name}/snapshot.json")
+                    state[name] = {
+                        "buckets": (bk or {}).get("buckets") or {},
+                        "buckets_pt": (bk or {}).get(
+                            "buckets_pt") or {},
+                        "snapshot": (sn or {}).get("by_symbol") or {}}
+                agg.import_src_state(
+                    state, only_day=start_dt.strftime("%Y-%m-%d"))
+                print(f"[tick-multi] resume OK: matches={agg.matches} "
+                      f"nen={ {s: len(v) for s, v in agg.candles.items()} }",
+                      flush=True)
+        except Exception as e:  # noqa: BLE001
+            print(f"[tick-multi] resume loi (bat dau trang): "
+                  f"{str(e)[:120]}", flush=True)
     adapters = {}
     tasks = {}
     for name in CONFIG["sources"]:
@@ -1359,6 +1891,29 @@ async def _collect(max_minutes=0):
         tasks[name] = asyncio.create_task(ad.run())
     last_publish = 0.0
     publishes = 0
+    _prev_msgs = {}
+    _prev_t = [time.time()]
+
+    def build_health(name):
+        """Suc khoe theo chan (artifact Dot 2, muc 3.1 cua thiet
+        ke): tach 3 so — lan noi, nhip tin/phut, lan dut + loi."""
+        ad = adapters[name]
+        now_t = time.time()
+        prev = _prev_msgs.get(name)
+        rate = None
+        if prev is not None and now_t > _prev_t[0]:
+            rate = round((ad.msgs - prev)
+                         / (now_t - _prev_t[0]) * 60, 1)
+        return {
+            "connected": bool(ad.connected),
+            "msgs": ad.msgs,
+            "msgs_per_min": rate,
+            "matches": agg.matches_by_src.get(name, 0),
+            "last_msg_ago_sec": round(now_t - ad.last_msg)
+            if ad.last_msg else None,
+            "last_error": ad.last_error or None,
+            "symbols_foreign": len(agg.foreign.get(name, {})),
+        }
     print(f"[tick-multi] bat dau {start_dt.isoformat()} "
           f"cong={list(adapters)} ma={len(universe)}", flush=True)
 
@@ -1381,7 +1936,7 @@ async def _collect(max_minutes=0):
                 "last_error": ad.last_error or None,
                 "symbols_foreign": len(agg.foreign.get(name, {})),
             }
-        return {
+        status = {
             "session_date": start_dt.strftime("%Y-%m-%d"),
             "mode": "multi",
             "live": CONFIG["live"],
@@ -1390,6 +1945,10 @@ async def _collect(max_minutes=0):
             "symbols_with_candles": len({
                 s for src in agg.candles for s in agg.candles[src]}),
             "crosscheck": agg.crosscheck(),
+            "snapshot_vs_ticks": agg.snapshot_vs_ticks(),
+            "tick_stats": agg.tick_stats,
+            "gate_stats": agg.gate_stats,
+            "checkpoint": agg.checkpoint(),
             "vps_aggregates": {
                 "counts": agg.agg_counts,
                 "aggregatemarket": agg.aggregates.get("aggregatemarket"),
@@ -1401,12 +1960,51 @@ async def _collect(max_minutes=0):
             "runtime_sec": round(time.time() - started),
             "closed": closed,
         }
+        if closed:
+            status["diag"] = agg.build_diag()
+        return status
 
     async def do_publish(closed=False):
         nonlocal publishes
         status = build_status(closed)
+        # --- Dot 2: raw chunks + artifact theo nguon. Doc dirty
+        # TRUOC build_intraday/clear. Raw drain o day: neu POST loi
+        # thi mat toi da 1 chu ky raw (cung nguong kill-test). ---
+        raw_recs = agg.drain_raw()
+        raw_grouped = {}
+        for rec in raw_recs:
+            ts_ev = rec[2] if rec[2] is not None else rec[3]
+            hour = datetime.fromtimestamp(ts_ev, ICT).strftime("%H")
+            raw_grouped.setdefault(rec[0], {}).setdefault(
+                hour, []).append(rec)
+        raw_payload = {}
+        for src_r, by_hour in raw_grouped.items():
+            raw_payload[src_r] = {}
+            for hour, recs in by_hour.items():
+                lines = "\n".join(
+                    json.dumps(r, separators=(",", ":"))
+                    for r in recs)
+                raw_payload[src_r][hour] = base64.b64encode(
+                    gzip.compress(lines.encode())).decode()
+        src_state = agg.export_src_state()
+        artifacts = {}
+        for name in CONFIG["sources"]:
+            part = src_state.get(name) or {}
+            bk = part.get("buckets") or {}
+            bkpt = part.get("buckets_pt") or {}
+            artifacts[name] = {
+                "snapshot": {"by_symbol": part.get("snapshot") or {}},
+                "health": build_health(name),
+                "buckets_dirty": {s: bk[s] for s in agg.dirty
+                                  if s in bk},
+                "buckets_pt_dirty": {s: bkpt[s]
+                                     for s in agg.dirty_pt
+                                     if s in bkpt},
+            }
+        for name in CONFIG["sources"]:
+            _prev_msgs[name] = adapters[name].msgs
+        _prev_t[0] = time.time()
         intra = agg.build_intraday(sorted(agg.dirty))
-        agg.dirty.clear()
         foreign = agg.build_foreign()
         flow = agg.build_foreign_flow()
         keys = list(intra.keys())
@@ -1416,7 +2014,9 @@ async def _collect(max_minutes=0):
             chunk = {k: intra[k] for k in ckeys}
             if ci == 0:
                 p = {"tick_shadow": {"status": status,
-                                     "foreign": foreign}}
+                                     "foreign": foreign,
+                                     "raw_chunks": raw_payload,
+                                     "src_artifacts": artifacts}}
                 if chunk:
                     p["tick_shadow"]["intraday"] = chunk
                 await asyncio.to_thread(publish, p, "multi")
@@ -1433,6 +2033,13 @@ async def _collect(max_minutes=0):
                     await asyncio.to_thread(
                         publish, {"tick_live": {"intraday": chunk}},
                         "multi")
+        # Publish xong moi xoa dirty: POST loi giua chung -> dirty
+        # con nguyen, chu ky sau gui lai (Worker merge idempotent,
+        # intraday ghi de theo ma). Xoa truoc POST se lam mat
+        # artifact cua ma ngung giao dich sau chu ky loi — vuot
+        # nguong mat <= 1 chu ky cua kill-test.
+        agg.dirty.clear()
+        agg.dirty_pt.clear()
         publishes += 1
 
     while not session_over():

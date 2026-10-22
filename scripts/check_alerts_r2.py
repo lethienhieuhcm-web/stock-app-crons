@@ -9,6 +9,7 @@ import sys
 import json
 import subprocess
 import tempfile
+import time
 
 WORKER = "https://lethanhdong.one"
 DH_ENV = os.path.expanduser("~/workspace/shopee-deal-hunter/.env")
@@ -69,7 +70,9 @@ def load_dh_env():
     return env
 
 
-def tg_send(text):
+def tg_send(text, attempts=3):
+    """Gui Telegram co retry backoff (proxy MITM hay cat TLS giua chung
+    — tien le 09:00 22/10). Caller chi danh dau alert-done khi True."""
     env = load_dh_env()
     token = env.get("TELEGRAM_BOT_TOKEN") or env.get("DEALHUNTER_TELEGRAM_BOT_TOKEN")
     chat_id = env.get("TELEGRAM_CHAT_ID") or env.get("DEALHUNTER_TELEGRAM_CHAT_ID")
@@ -79,12 +82,16 @@ def tg_send(text):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     body = json.dumps({"chat_id": chat_id, "text": text,
                        "parse_mode": "HTML"})
-    try:
-        return curl_json(url, "POST", {"Content-Type": "application/json"},
-                         body).get("ok", False)
-    except Exception as e:
-        print(f"Telegram loi: {e}", flush=True)
-        return False
+    for i in range(attempts):
+        try:
+            if curl_json(url, "POST", {"Content-Type": "application/json"},
+                         body).get("ok", False):
+                return True
+        except Exception as e:
+            print(f"Telegram loi lan {i + 1}/{attempts}: {e}", flush=True)
+            if i < attempts - 1:
+                time.sleep(5 * (i + 1))
+    return False
 
 
 def fmt_vnd(x):
@@ -125,19 +132,56 @@ def main():
                         {"email": email, "id": a["id"]})
                     print(f"alert {sym} -> da bao", flush=True)
 
-        # TP/SL targets
+        # TP/SL targets: % lai/lo chua thuc hien tinh tu gia von theo
+        # dung cong thuc sCalcPositions cua worker (mua: cong ca phi vao
+        # von; ban: tru theo gia von binh quan tai thoi diem ban).
+        pos = {}
+        for tx in sorted(u.get("txns", []),
+                         key=lambda x: ((x.get("date") or ""), x.get("id") or 0)):
+            p = pos.setdefault(tx["symbol"], {"qty": 0.0, "cost": 0.0})
+            qty = tx.get("qty") or 0
+            prc = tx.get("price") or 0
+            fee = tx.get("fee") or 0
+            if tx.get("side") == "BUY":
+                p["qty"] += qty
+                p["cost"] += prc * qty + fee
+            else:
+                avg0 = p["cost"] / p["qty"] if p["qty"] else 0
+                p["qty"] -= qty
+                p["cost"] -= avg0 * qty
         for t in u.get("targets", []):
             sym = t["symbol"]
+            p = pos.get(sym)
+            if not p or p["qty"] <= 1e-9 or not p["cost"]:
+                continue  # khong con nam giu ma nay -> khong danh gia TP/SL
             q = quotes.get(sym)
             if not q:
                 continue
             price = q.get("close") or q.get("price")
             if not price:
                 continue
-            # Tinh % tu gia von (can txns)
-            # Don gian: dung gia von tu positions neu co
-            # (bo qua chi tiet o day, se tinh trong daily report)
-            pass
+            avg = p["cost"] / p["qty"]
+            pnl = (price - avg) / avg * 100
+            tp = t.get("take_profit_pct")
+            sl = t.get("stop_loss_pct")
+            if tp is not None and not t.get("tp_done") and pnl >= tp:
+                msg = (f"🎯 <b>{sym}</b> cham muc chot loi!\n"
+                       f"Gia hien tai: <b>{fmt_vnd(price)}</b>\n"
+                       f"Lai: <b>{pnl:+.1f}%</b> (nguong +{tp}%)\n"
+                       f"Gia von: {fmt_vnd(avg)}")
+                if tg_send(msg):
+                    api("/api/internal/stock-target-done", "POST",
+                        {"email": email, "symbol": sym, "field": "tp_done"})
+                    print(f"target TP {sym} -> da bao", flush=True)
+            if sl is not None and not t.get("sl_done") and pnl <= -abs(sl):
+                msg = (f"🛑 <b>{sym}</b> cham muc cat lo!\n"
+                       f"Gia hien tai: <b>{fmt_vnd(price)}</b>\n"
+                       f"Lo: <b>{pnl:+.1f}%</b> (nguong -{abs(sl)}%)\n"
+                       f"Gia von: {fmt_vnd(avg)}")
+                if tg_send(msg):
+                    api("/api/internal/stock-target-done", "POST",
+                        {"email": email, "symbol": sym, "field": "sl_done"})
+                    print(f"target SL {sym} -> da bao", flush=True)
 
     print("xong.", flush=True)
 

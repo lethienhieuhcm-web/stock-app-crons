@@ -303,6 +303,31 @@ def kbs_ohlcv(
     ]
 
 
+def _kbs_depth(r: dict, pk: str, vk: str):
+    """3 buoc gia KBS (B/V mua, S/U ban) -> [[gia, KL], ...] chuan so.
+
+    Sua goc 22/10/2026: truoc day adapter tra tuple tho (gia co the la
+    chuoi "34150.0") va giu ca buoc chet (gia None/0) -> frontend
+    Number(tuple) = NaN in thang ra trang chi tiet. Chuan moi: gia/KL
+    la so that, buoc khong gia bi loai, ca phia rong -> None
+    (missing_policy='na': thieu thi ghi thieu, khong bia so).
+    """
+    steps = []
+    for i in (1, 2, 3):
+        try:
+            p = float(r.get(f"{pk}{i}"))
+        except (TypeError, ValueError):
+            continue
+        if p <= 0:
+            continue
+        try:
+            v = int(float(r.get(f"{vk}{i}")))
+        except (TypeError, ValueError):
+            v = None
+        steps.append([int(p) if p == int(p) else p, v])
+    return steps or None
+
+
 def kbs_price_board(symbols: list[str]) -> dict[str, dict]:
     """Bang gia realtime tu KBS (POST /stock/iss).
 
@@ -367,17 +392,26 @@ def kbs_price_board(symbols: list[str]) -> dict[str, dict]:
             "volume": r.get("TT"),
             "value": r.get("TV"),
             "avg_price": r.get("AP"),
-            "bid": [
-                (r.get(f"B{i}"), r.get(f"V{i}")) for i in (1, 2, 3)
-            ],
-            "ask": [
-                (r.get(f"S{i}"), r.get(f"U{i}")) for i in (1, 2, 3)
-            ],
-            # khoi ngoai — tuong duong market.equity.foreign_flow
+            "bid": _kbs_depth(r, "B", "V"),
+            "ask": _kbs_depth(r, "S", "U"),
+            # Khoi ngoai: FB/FS la KL mua/ban that cua phien.
+            # FO/FR KHONG phai gia tri giao dich (sua goc 21/10/2026, doi
+            # chieu so that: FPT FO = 49% x co phieu luu hanh, VCB FO =
+            # 30% x luu hanh — khop tung co phieu): FO = han muc so huu NN
+            # (CP), FR = room con lai (CP). Bang gia KBS khong co gia tri
+            # mua/ban NN -> de None; noi tieu thu dien tu VCI.
             "foreign_buy_volume": r.get("FB"),
             "foreign_sell_volume": r.get("FS"),
-            "foreign_buy_value": r.get("FO"),
-            "foreign_sell_value": r.get("FR"),
+            "foreign_buy_value": None,
+            "foreign_sell_value": None,
+            "foreign_limit_shares": r.get("FO"),
+            "foreign_room_shares": r.get("FR"),
+            "foreign_owned_shares": (
+                r.get("FO") - r.get("FR")
+                if isinstance(r.get("FO"), (int, float))
+                and isinstance(r.get("FR"), (int, float))
+                else None
+            ),
         }
     return out
 
