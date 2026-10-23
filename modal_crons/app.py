@@ -69,18 +69,44 @@ def book_processor():
     API = "https://api.cloudflare.com/client/v4"
     ACCOUNT = "25b2327e932d26e5487c2ba8ad058932"
     BUCKET = "english-lab-data"
+    # Cloudflare chan UA mac dinh cua urllib (error 1010) mot cach gian
+    # doan theo IP egress cua Modal -> 403 vai lan/ngay tu 22/10.
+    # Gan UA trinh duyet + retry voi backoff cho 403/429/5xx.
+    UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+          "AppleWebKit/537.36 (KHTML, like Gecko) "
+          "Chrome/126.0.0.0 Safari/537.36")
 
     def api_req(method, path, data=None, raw=False):
+        import time as _time
+        import urllib.error
         url = API + path
         body = json.dumps(data).encode() if data is not None else None
-        req = urllib.request.Request(url, data=body, method=method)
-        req.add_header("Authorization", f"Bearer {CF_TOKEN}")
-        if not raw:
-            req.add_header("Content-Type", "application/json")
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            if raw:
-                return resp.read()
-            return json.loads(resp.read().decode())
+        last = None
+        for attempt in range(4):
+            req = urllib.request.Request(url, data=body, method=method)
+            req.add_header("Authorization", f"Bearer {CF_TOKEN}")
+            req.add_header("User-Agent", UA)
+            if not raw:
+                req.add_header("Content-Type", "application/json")
+            try:
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    if raw:
+                        return resp.read()
+                    return json.loads(resp.read().decode())
+            except urllib.error.HTTPError as e:
+                last = e
+                if e.code in (403, 429) or e.code >= 500:
+                    if attempt < 3:
+                        _time.sleep((2, 5, 10)[attempt])
+                        continue
+                raise
+            except Exception as e:
+                last = e
+                if attempt < 3:
+                    _time.sleep((2, 5, 10)[attempt])
+                    continue
+                raise
+        raise last
 
     def r2_download(key):
         return api_req("GET", f"/accounts/{ACCOUNT}/r2/buckets/{BUCKET}/objects/{key}", raw=True)
@@ -99,9 +125,16 @@ def book_processor():
             f"{API}/accounts/{ACCOUNT}/r2/buckets/{BUCKET}/objects/{key}",
             data=data, method="PUT")
         req.add_header("Authorization", f"Bearer {CF_TOKEN}")
+        req.add_header("User-Agent", UA)
         req.add_header("Content-Type", "application/json")
         with urllib.request.urlopen(req, timeout=120):
             pass
+
+    def r2_get_json(key):
+        try:
+            return json.loads(r2_download(key).decode())
+        except Exception:
+            return None
 
     # Find pending PDFs
     pending = r2_list("books/pending/")
@@ -109,10 +142,31 @@ def book_processor():
         print(f"[{datetime.now().isoformat()}] book_processor: no pending PDFs")
         return
 
+    # Claim chong xu ly trung: moi sach duoc danh dau bang mot object
+    # books/claims/<book_id>.json truoc khi xu ly. Claim con tuoi
+    # (< 20 phut) cua tien trinh khac -> bo qua sach do. Dau ra
+    # (books/text, books/meta) xac dinh theo book_id nen ke ca khi hai
+    # tien trinh cung chay, ghi de cung noi dung; claim chi de tranh
+    # viec trung nhau. VM cron dung keyspace jobs/ + uploads/ rieng.
+    now_ms = int(datetime.now().timestamp() * 1000)
+
     import fitz  # pymupdf
 
     for obj in pending:
         key = obj["key"]
+        claim_id = os.path.basename(key).replace(".pdf", "")
+        claim_key = f"books/claims/{claim_id}.json"
+        existing = r2_get_json(claim_key)
+        if existing and now_ms - int(existing.get("ts", 0)) < 20 * 60 * 1000:
+            print(f"Skip {key}: claimed at {existing.get('ts')} "
+                  f"by {existing.get('owner')}")
+            continue
+        try:
+            r2_put(claim_key, {"owner": "modal-book-processor",
+                               "ts": now_ms, "key": key})
+        except Exception as e:
+            print(f"Claim failed for {key}: {e} — xu ly tiep (dau ra "
+                  f"theo book_id, ghi de cung noi dung)")
         print(f"Processing {key}...")
         try:
             pdf_bytes = r2_download(key)
@@ -178,6 +232,11 @@ def book_processor():
             print(f"  -> {book_id}: {len(words)} words, {len(chapters)} chapters, CEFR {cefr}")
         except Exception as e:
             print(f"  ERROR {key}: {e}")
+        finally:
+            try:
+                r2_delete(claim_key)
+            except Exception:
+                pass
 
     volume.commit()
 
