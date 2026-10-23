@@ -56,7 +56,7 @@ import modal
 app = modal.App("stock-tick-collector")
 
 image = (modal.Image.debian_slim(python_version="3.12")
-         .pip_install("websockets>=12"))
+         .pip_install("websockets>=14"))
 
 
 @app.function(image=image,
@@ -87,9 +87,11 @@ PUBLISH_URL = "https://lethanhdong.one/api/internal/stock-publish"
 CONFIG = {
     # Chu ky publish (giay)
     "publish_sec": 30,
-    # Cong khoi dong o Tang A (Modal). SSI = Tang C (chua quyet),
-    # VCI = Tang B (OVH/Botkeep) — adapter con trong code, khong chay.
-    "sources": ["dnse", "kbs", "vndirect", "vps"],
+    # Cong khoi dong o Tang A (Modal): 4 cong truc tiep + SSI qua
+    # chuoi CONNECT proxy dan-cu (Dat 4, Chot 09:47 23/10 — chay
+    # bong, vao parity nhu cong thu 5). VCI = chan Botkeep relay-4
+    # (adapter con trong code, khong chay trong loi).
+    "sources": ["dnse", "kbs", "vndirect", "vps", "ssi-mqtt"],
     # LAT PRODUCTION: False — DINH CHINH lenh 19:40 21/10: giu ban
     # da cong chay BONG them vai phien, bao parity tung phien; chi
     # bat True khi co lenh lat rieng sau (khi do tick_live moi ghi
@@ -341,6 +343,16 @@ def pb_decode(buf, fields):
 
 # ---------------- MQTT 3.1.1 over WebSocket (tu probe) ----------------
 
+def _in_trading_window(dt) -> bool:
+    """Khung giao dich T2-T6: 09:00-11:30 + 13:00-15:00 ICT.
+    Dung cho watchdog im lang (Dat 4): ngoai khung nay feed SSI
+    im lang la binh thuong, khong duoc tinh la ket noi chet."""
+    if dt.weekday() >= 5:
+        return False
+    m = dt.hour * 60 + dt.minute
+    return (540 <= m < 690) or (780 <= m < 900)
+
+
 def _enc_str(s):
     b = s.encode()
     return struct.pack(">H", len(b)) + b
@@ -393,23 +405,41 @@ def _mqtt_parse_publish(msg):
 
 
 class MqttWs:
-    """MQTT tren WS: tu reconnect + subscribe lai + PINGREQ 25s."""
+    """MQTT tren WS: tu reconnect + subscribe lai + PINGREQ 25s.
+
+    Tham so Dat 4 (chi SSI dung, cac cong khac giu mac dinh cu):
+    - proxy: URL proxy HTTP CONNECT (websockets>=14 tu lam tunnel +
+      TLS); None = noi truc tiep nhu truoc.
+    - backoff_seq: day giay ngu giua cac lan reconnect, phan tu cuoi
+      lap lai; None = luat cu (2s nhan doi, tran 30s).
+    - silent_watchdog_sec: >0 thi trong GIO GIAO DICH, qua N giay
+      khong nhan tin la coi ket noi chet lang -> dong, noi lai theo
+      backoff (su co conn im lang 13:11 22/10)."""
 
     def __init__(self, url, user, pw, topics, on_msg, subprotocol="mqtt",
-                 origin=None):
+                 origin=None, proxy=None, backoff_seq=None,
+                 silent_watchdog_sec=0):
         self.url, self.user, self.pw = url, user, pw
         self.topics, self.on_msg = topics, on_msg
         self.subprotocol = subprotocol
         self.origin = origin
+        self.proxy = proxy
+        self.backoff_seq = backoff_seq
+        self.silent_watchdog_sec = silent_watchdog_sec
         self.last_msg = 0.0
         self.msgs = 0
         self.connected = False
         self.last_error = ""
         self._stop = False
 
+    def _backoff_for(self, idx):
+        if self.backoff_seq:
+            return self.backoff_seq[min(idx, len(self.backoff_seq) - 1)]
+        return min(2 * (2 ** idx), 30)
+
     async def run(self):
         from websockets.asyncio.client import connect
-        backoff = 2
+        backoff_idx = 0
         headers = {"User-Agent": "Mozilla/5.0"}
         if self.origin:
             headers["Origin"] = self.origin
@@ -417,11 +447,14 @@ class MqttWs:
             try:
                 cid = "tick-" + "".join(
                     random.choices("abcdef0123456789", k=8))
+                kw = {}
+                if self.proxy:
+                    kw["proxy"] = self.proxy
                 async with connect(
                         self.url, subprotocols=[self.subprotocol],
                         open_timeout=20, ping_interval=None,
                         additional_headers=headers,
-                        max_size=8 * 1024 * 1024) as ws:
+                        max_size=8 * 1024 * 1024, **kw) as ws:
                     await ws.send(_mqtt_connect(cid, self.user, self.pw))
                     msg = await asyncio.wait_for(ws.recv(), 20)
                     if not (isinstance(msg, bytes) and msg[0] >> 4 == 2
@@ -429,9 +462,21 @@ class MqttWs:
                         raise ConnectionError(f"CONNACK rc={msg!r:.40}")
                     await ws.send(_mqtt_subscribe(1, self.topics))
                     self.connected = True
-                    backoff = 2
+                    backoff_idx = 0
+                    if self.silent_watchdog_sec:
+                        # An han watchdog tu luc noi xong (ke ca khi
+                        # chua co tin dau tien).
+                        self.last_msg = time.time()
                     last_ping = time.time()
                     while not self._stop:
+                        if self.silent_watchdog_sec and self.last_msg \
+                                and time.time() - self.last_msg \
+                                > self.silent_watchdog_sec \
+                                and _in_trading_window(now_ict()):
+                            raise ConnectionError(
+                                "silent watchdog: "
+                                f"{round(time.time() - self.last_msg)}s "
+                                "khong tin trong gio giao dich")
                         if time.time() - last_ping > 25:
                             await ws.send(b"\xc0\x00")
                             last_ping = time.time()
@@ -455,8 +500,8 @@ class MqttWs:
                       f"{self.last_error}", flush=True)
                 if self._stop:
                     break
-                await asyncio.sleep(backoff)
-                backoff = min(backoff * 2, 30)
+                await asyncio.sleep(self._backoff_for(backoff_idx))
+                backoff_idx += 1
 
     def stop(self):
         self._stop = True
@@ -623,8 +668,17 @@ class SsiAdapter:
             topics += [f"s/{s}/MAIN", f"l/{s}/MAIN"]
         topics += ["pe", "i/VNINDEX", "i/VN30"]
         ep, user, pw = ssi_config()
-        self.client = MqttWs(ep, user, pw, topics, self._on_msg,
-                             origin="https://fiintrade.ssi.com.vn")
+        # Dat 4 (Chot 09:47 23/10): noi qua proxy dan-cu — URL doc tu
+        # Modal secret (SSI_PROXY_URL, ghi 23/10); thieu secret thi
+        # noi truc tiep nhu cu (se bi SSI 403 tu Modal, trang thai
+        # truoc Dat 4). Backoff rieng 5s->30s->120s + watchdog im
+        # lang 90s trong gio giao dich (thiet ke tong the 3.1/3.6;
+        # spike phuong an A: proxy= cua websockets>=14, PASS 23/10).
+        self.client = MqttWs(
+            ep, user, pw, topics, self._on_msg,
+            origin="https://fiintrade.ssi.com.vn",
+            proxy=os.environ.get("SSI_PROXY_URL") or None,
+            backoff_seq=(5, 30, 120), silent_watchdog_sec=90)
 
     @property
     def last_msg(self):
@@ -1335,6 +1389,76 @@ class Aggregator:
         # Raw store (Dot 2): moi tick di qua on_match/on_put deu ghi
         # 1 dong raw TRUOC khi dedup — drain moi chu ky publish.
         self.raw_buf = []
+        # Bang khop lenh chi tiet (tape) — chi chan dnse (chan chinh,
+        # day tick nhat). Phia khop M/B SUY THEO LUAT TICK (khong
+        # cong nao cua nha mang truong phia that vao ban ghi chuan):
+        # gia > tick truoc -> M, < -> B, bang -> giu phia gan nhat,
+        # tick dau phien -> khong nhan. sym -> {trades, total, buy,
+        # sell, unk, levels, prev, last_side, dirty, started}
+        self.tape = {}
+        self.tape_started = time.time()
+
+    def tape_rec(self, sym, ts, price, vol):
+        t = self.tape.get(sym)
+        if t is None:
+            t = self.tape[sym] = {
+                "trades": [], "total": 0, "buy": 0, "sell": 0,
+                "unk": 0, "levels": {}, "prev": None, "last_side": "",
+                "dirty": True}
+        prev = t["prev"]
+        if prev is None:
+            side = ""
+        elif price > prev:
+            side = "M"
+        elif price < prev:
+            side = "B"
+        else:
+            side = t["last_side"]
+        t["trades"].append((ts, price, vol, side))
+        t["total"] += vol
+        if side == "M":
+            t["buy"] += vol
+        elif side == "B":
+            t["sell"] += vol
+        else:
+            t["unk"] += vol
+        t["levels"][price] = t["levels"].get(price, 0) + vol
+        t["prev"] = price
+        if side:
+            t["last_side"] = side
+        t["dirty"] = True
+
+    def build_tape(self):
+        """{sym: tape doc} cho cac ma co tick moi ke tu lan publish
+        truoc. Danh sach lenh cat o 1000 lenh gan nhat (tong hop
+        tinh tren TOAN BO bang). partial=True neu bo thu khoi dong
+        sau 09:05 ICT (bang thieu dau phien do restart)."""
+        out = {}
+        ict_now = datetime.now(ICT)
+        partial = (datetime.fromtimestamp(
+            self.tape_started, ICT).strftime("%H:%M") > "09:05")
+        day = ict_now.strftime("%Y-%m-%d")
+        for sym, t in self.tape.items():
+            if not t["dirty"]:
+                continue
+            t["dirty"] = False
+            trades = sorted(t["trades"], key=lambda x: x[0])[-1000:]
+            out[sym] = {
+                "symbol": sym, "date": day, "source": "dnse",
+                "side_method": "tick_rule", "partial": partial,
+                "total_vol": t["total"], "buy_vol": t["buy"],
+                "sell_vol": t["sell"], "unknown_vol": t["unk"],
+                "n_trades": len(t["trades"]),
+                "levels": [{"p": p, "v": v} for p, v in
+                           sorted(t["levels"].items())],
+                "trades": [{
+                    "ts": int(ts),
+                    "time": datetime.fromtimestamp(ts, ICT).strftime(
+                        "%H:%M:%S"),
+                    "p": price, "v": vol, "s": side,
+                } for ts, price, vol, side in trades],
+            }
+        return out
 
     def on_match(self, src, sym, ts, price, vol, acc):
         # Raw (Dot 2): [src, sym, ts_event, ts_recv, price, vol, acc]
@@ -1399,6 +1523,8 @@ class Aggregator:
                 b[0] = price
                 b[5] = ts
             b[4] += vol
+        if src == "dnse":
+            self.tape_rec(sym, ts, price, vol)
         self.dirty.add(sym)
         self.matches += 1
         self.matches_by_src[src] = self.matches_by_src.get(src, 0) + 1
@@ -2033,6 +2159,15 @@ async def _collect(max_minutes=0):
                     await asyncio.to_thread(
                         publish, {"tick_live": {"intraday": chunk}},
                         "multi")
+        # Bang khop lenh chi tiet (tape): publish kem chu ky nay,
+        # loi thi chu ky sau gui lai (build_tape chi danh dau dirty
+        # lai khi co tick moi — neu POST loi o day, lan publish ke
+        # tiep se khong co dirty cho ma khong phat sinh tick moi;
+        # chap nhan duoc vi tape la du lieu hien thi, khong phai
+        # artifact kiem toan).
+        tape = agg.build_tape()
+        if tape:
+            await asyncio.to_thread(publish, {"tape": tape}, "multi")
         # Publish xong moi xoa dirty: POST loi giua chung -> dirty
         # con nguyen, chu ky sau gui lai (Worker merge idempotent,
         # intraday ghi de theo ma). Xoa truoc POST se lam mat
