@@ -558,6 +558,21 @@ def realtime_poller():
         except Exception as e2:
             print(f"[realtime] indices fallback error: {e2} -> giu nguyen so cu tren R2")
 
+    # 2b. Chi so nganh (them 23/10 — sua goc loi "chua co bieu do cua
+    # cac chi so"): truoc day KHONG co buoc nao publish khoa
+    # sector_indices trong luong chay thuong truc (publish_snapshot
+    # Modal da tat 19/10, lane slow VM tra ve truoc doan base) nen
+    # file tren R2 chi duoc ghi boi cac lan publish tay. Cung nguon
+    # dchart + cung contract voi chi so chinh; loi thi giu so cu.
+    try:
+        sec_rows = df.vnd_sector_snapshot()
+        if sec_rows:
+            r = publish({"sector_indices": sec_rows,
+                         "_prov": {"source": "direct:vndirect", "retrieved_at": datetime.now(timezone.utc).isoformat()}})
+            print(f"[realtime] sector indices (vnd): {len(sec_rows)} -> {r}")
+    except Exception as e:  # noqa: BLE001
+        print(f"[realtime] sector indices error: {e} -> giu nguyen so cu tren R2")
+
     print("[realtime] done.")
 
 

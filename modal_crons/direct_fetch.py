@@ -110,61 +110,103 @@ _VND_INDEX_SYMBOLS = [
     ("UPCOMIndex", "UPCOM"),
 ]
 
+# Chi so nganh HOSE tren dchart (ten app = ten dchart)
+_VND_SECTOR_SYMBOLS = [
+    ("VNFIN", "VNFIN"),
+    ("VNREAL", "VNREAL"),
+    ("VNIT", "VNIT"),
+    ("VNIND", "VNIND"),
+    ("VNMAT", "VNMAT"),
+    ("VNCONS", "VNCONS"),
+]
 
-def vnd_index_snapshot() -> list[dict]:
-    """Snapshot 4 chi so tu VNDirect dchart (feed bieu do truc tiep, cap nhat theo phut).
 
-    2026-10-20: thay vci_index_history cho khau realtime — VCI IQ history la
-    feed EOD (cham 1 ngay, sap xep GIAM dan moi nhat truoc) nen poller boc
-    nham so cua phien cu lam so hom nay. dchart tra nen ngay (resolution=D):
-    nen cuoi = hom nay (close = gia tri hien tai, volume = tong phien),
-    nen truoc = phien hom qua lam moc tinh change.
-    KY THUAT: chi gui User-Agent — gui kem "Accept: application/json" la
-    server tra 406. Loi tung chi so thi bo qua chi so do.
-    Tra ve rows dung contract app: {symbol, close, volume, time, change,
-    pct_change} + prev_close/prev_date de poller doi chieu cheo voi VCI.
+def _dchart_index_rows(symbols) -> list[dict]:
+    """Snapshot chi so tu VNDirect dchart (feed bieu do truc tiep, cap
+    nhat theo phut).
+
+    2026-10-20: thay vci_index_history cho khau realtime — VCI IQ
+    history la feed EOD (cham 1 ngay, sap xep GIAM dan moi nhat truoc)
+    nen poller boc nham so cua phien cu lam so hom nay. dchart tra nen
+    ngay (resolution=D): nen cuoi = hom nay (close = gia tri hien tai,
+    volume = tong phien), nen truoc = phien hom qua lam moc tinh change.
+    KY THUAT: chi gui User-Agent — gui kem "Accept: application/json"
+    la server tra 406. Loi tung chi so thi bo qua chi so do.
+    Tra ve rows dung contract app: {symbol, close, volume, time,
+    change, pct_change} + prev_close/prev_date de poller doi chieu
+    cheo voi VCI.
     """
     from datetime import datetime, timezone, timedelta
 
     now = int(time.time())
     frm = now - 10 * 86400
     out = []
-    for app_sym, dc_sym in _VND_INDEX_SYMBOLS:
-        url = f"{_DCHART}?symbol={dc_sym}&resolution=D&from={frm}&to={now}"
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-                raw = resp.read()
-                if "gzip" in resp.headers.get("Content-Encoding", ""):
-                    import gzip
-
-                    raw = gzip.decompress(raw)
-            d = json.loads(raw)
-            ts, cs, vs = d.get("t") or [], d.get("c") or [], d.get("v") or []
-            if len(ts) < 2 or len(cs) < 2:
-                continue
-            vn = timezone(timedelta(hours=7))
-            last_date = datetime.fromtimestamp(ts[-1], vn).date().isoformat()
-            prev_date = datetime.fromtimestamp(ts[-2], vn).date().isoformat()
-            close = float(cs[-1])
-            prev_close = float(cs[-2])
-            chg = round(close - prev_close, 2)
-            pct = round(chg / prev_close * 100, 2) if prev_close else 0
-            out.append(
-                {
-                    "symbol": app_sym,
-                    "close": close,
-                    "volume": float(vs[-1]) if vs else None,
-                    "time": last_date,
-                    "change": chg,
-                    "pct_change": pct,
-                    "prev_close": prev_close,
-                    "prev_date": prev_date,
-                }
-            )
-        except Exception:  # noqa: BLE001 — loi 1 chi so khong duoc lam chet cac chi so con lai
-            continue
+    missing = []
+    for app_sym, dc_sym in symbols:
+        row = _dchart_one(app_sym, dc_sym, frm, now)
+        if row:
+            out.append(row)
+        else:
+            missing.append((app_sym, dc_sym))
+    # Luot 2 cho ma rung (do that 23/10: goi lien tiep 10 ma thi moi
+    # luot rung ngau nhien 1 ma — VN30/VNIND/VNIT/HNX thay nhau; goi
+    # le thi tot). Nghi 1s roi thu lai tung ma con thieu.
+    for app_sym, dc_sym in missing:
+        time.sleep(1)
+        row = _dchart_one(app_sym, dc_sym, frm, now)
+        if row:
+            out.append(row)
     return out
+
+
+def _dchart_one(app_sym, dc_sym, frm, now):
+    from datetime import datetime, timezone, timedelta
+
+    url = f"{_DCHART}?symbol={dc_sym}&resolution=D&from={frm}&to={now}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            raw = resp.read()
+            if "gzip" in resp.headers.get("Content-Encoding", ""):
+                import gzip
+
+                raw = gzip.decompress(raw)
+        d = json.loads(raw)
+        ts, cs, vs = d.get("t") or [], d.get("c") or [], d.get("v") or []
+        if len(ts) < 2 or len(cs) < 2:
+            return None
+        vn = timezone(timedelta(hours=7))
+        last_date = datetime.fromtimestamp(ts[-1], vn).date().isoformat()
+        prev_date = datetime.fromtimestamp(ts[-2], vn).date().isoformat()
+        close = float(cs[-1])
+        prev_close = float(cs[-2])
+        chg = round(close - prev_close, 2)
+        pct = round(chg / prev_close * 100, 2) if prev_close else 0
+        return {
+            "symbol": app_sym,
+            "close": close,
+            "volume": float(vs[-1]) if vs else None,
+            "time": last_date,
+            "change": chg,
+            "pct_change": pct,
+            "prev_close": prev_close,
+            "prev_date": prev_date,
+        }
+    except Exception:  # noqa: BLE001 — loi 1 chi so khong duoc lam chet cac chi so con lai
+        return None
+
+
+def vnd_index_snapshot() -> list[dict]:
+    """Snapshot 4 chi so chinh (VNINDEX/VN30/HNX/UPCOM)."""
+    return _dchart_index_rows(_VND_INDEX_SYMBOLS)
+
+
+def vnd_sector_snapshot() -> list[dict]:
+    """Snapshot 6 chi so nganh HOSE (VNFIN/VNREAL/VNIT/VNIND/VNMAT/
+    VNCONS) — cung nguon dchart, cung contract voi chi so chinh.
+    Them 23/10: poller truoc day khong publish khoa sector_indices nen
+    file tren R2 dong cung o cac lan publish tay."""
+    return _dchart_index_rows(_VND_SECTOR_SYMBOLS)
 
 
 def vci_company(symbol: str) -> dict:
